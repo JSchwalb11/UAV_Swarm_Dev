@@ -37,9 +37,9 @@ ipAddr = "192.168.1.3" # This is set in case you are on windows and the followin
 #====Set To False For Physical Drone======
 print("=====================SLAVE 2 : ID 3=======================")
 print("==================="+ipAddr+"===================")
-drone = Drone(useSitl=True,port="5790",ID='3',ip=ipAddr, logger=logger) #make sure IP specified here matches IP of the device
+drone = Drone(useSitl=False,port="5790",ID='3',ip=ipAddr, logger=logger) #make sure IP specified here matches IP of the device
 
-drone.set_airspeed(100)
+drone.set_airspeed(3)
 
 print("Adding Drone To Swarm")
 drone.add_to_swarm()

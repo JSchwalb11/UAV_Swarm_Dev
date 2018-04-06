@@ -40,7 +40,7 @@ ipAddr = "192.168.1.1" # This is set in case you are on windows and the followin
 #====Set To False For Physical Drone======
 print("=====================MASTER=======================")
 print("==================="+ipAddr+"===================")
-drone = Drone(useSitl=True,port="5770",ID=id,ip=ipAddr,logger=logger)
+drone = Drone(useSitl=false,port="5770",ID=id,ip=ipAddr,logger=logger)
 
 print("Adding Drone To Swarm")
 drone.add_to_swarm()
@@ -65,13 +65,13 @@ print("===========WAITING_FOR_SWARM=============")
 drone.wait_for_swarm_to_match_altitude()
 print("=========================================")
 
-print("Moving Drone To Somewhere")
-drone.set_airspeed(3)
-drone.move_to_position(47 ,104, 20.0)
-while (1):
-	data= drone.get_drone_data()
-	print(data["latitude"]+" - "+data["longitude"]+" - "+data["altitude"])
-	time.sleep(.75)
+# print("Moving Drone To Somewhere")
+# drone.set_airspeed(3)
+# drone.move_to_position(47 ,104, 20.0)
+# while (1):
+# 	data= drone.get_drone_data()
+# 	print(data["latitude"]+" - "+data["longitude"]+" - "+data["altitude"])
+# 	time.sleep(.75)
 
 print("===========WAITING_FOR_PILOT_TO_TAKE_CONTROL=============")
 counter = 0
