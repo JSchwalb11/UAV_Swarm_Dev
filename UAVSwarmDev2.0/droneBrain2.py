@@ -10,25 +10,23 @@ import time
 import dronekit_sitl
 import argparse
 
-class Drone():
-    
 
+class Drone:
     formation = "triangle"
 
-    def __init__(self,default_connection_string, default_webserver, id, ip, sitl):
-
-        self.default_webserver_ip = '192.168.1.1' #change depending on drone's role - 192.168.1.[1-10]
-        self.default_port = '5760'
-        self.default_webserver_port = "5000"
-
-        self.id = id
-        self.ip = ip
-        self.sitl = sitl
-#        self.port = port
-        self.connection_string = default_connection_string
-        self.webserver = default_webserver + ":" + self.default_webserver_port
-        print('\nConnecting to vehicle on: %s\n'%self.connection_string)
+    def __init__(self, config):
+        self.default_webserver_ip = config.ip #'192.168.1.1'  # change depending on drone's role - 192.168.1.[1-10]
+        self.default_port = config.port
+        self.default_webserver_port = config.webport
+        self.id = config.id
+        self.ip = config.ip
+        self.sitl = config.sitl
+        #        self.port = port
+        self.connection_string = dronekit_sitl.start_default().connection_string()#str(self.ip) + ":" + str(self.default_port)
+        self.webserver = str(self.ip) + ":" + str(self.default_webserver_port)
+        print('\nConnecting to vehicle on: %s\n' % self.connection_string)
         self.vehicle = connect(self.connection_string)
+        self.drone_data = self.get_drone_data()
         self.mission = Mission(self.vehicle)
         # logger config
         self.logger = logging.getLogger("drone" + (str)(self.id) + "_log")
@@ -42,10 +40,8 @@ class Drone():
         self.logger.addHandler(fh)
         self.logger.addHandler(ch)
 
-        #Always add the drone to swarm last.
-        print(str(self.get_drone_data()))
-
-
+        # Always add the drone to swarm last.
+        #print(self.get_drone_data())
 
     # =============================ATTRIBUTE LISTENER CALLBACKS==============================================
     # =======================================================================================================
@@ -83,26 +79,26 @@ class Drone():
     def send_data_to_server(self, route, data):
         url = self.webserver + route + "/" + str(self.id)
         try:
-            r = requests.post(url,json.dumps(data))
+            r = requests.post(url, json.dumps(data))
             self.logger.info("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
         except requests.HTTPError:
             self.logger.info(str(requests.HTTPError))
 
     def get_data_from_server(self, route, id):
-            url = self.webserver + route + "/" + str(id)
-            try:
+        url = self.webserver + route + "/" + str(id)
+        try:
 
-                r = requests.get(url)
-                self.logger.info("\nServer Responded With: " + str(r.status_code) + " " + (str)(json.dumps(data)) + "\n")
-                return json.loads(r.text)
+            r = requests.get(url)
+            self.logger.info("\nServer Responded With: " + str(r.status_code) + " " + (str)(json.dumps(data)) + "\n")
+            return json.loads(r.text)
 
-            except requests.HTTPError:
-                self.logger.info("Error Getting Data From The Server, Is It Running?")  # printed not loggered?
-                return "NO_DATA"
+        except requests.HTTPError:
+            self.logger.info("Error Getting Data From The Server, Is It Running?")  # printed not loggered?
+            return "NO_DATA"
 
-            # used to see how the server is responding. Maybe just print to log and not console
+        # used to see how the server is responding. Maybe just print to log and not console
 
-            # self.logger.info("\n\nRETURNING: " + json.dumps(data) + "\n\n")
+        # self.logger.info("\n\nRETURNING: " + json.dumps(data) + "\n\n")
 
     def add_to_swarm(self):
         self.send_data_to_server("/adddrone", self.get_drone_data())
@@ -114,28 +110,24 @@ class Drone():
         return self.get_data_from_server("/swarmdata", None)
 
     def abort_if_drone_doesnt_exist(self):
-        if Swarm.droneExists(Drone.id) :
+        if Swarm.droneExists(Drone.id):
             abort(404, message="Drone {} doesn't exist".format(Drone.id))
-
-
-
 
     # =============================VEHICLE INFORMATION FUNCTIONS=================================================
     # =======================================================================================================
     def get_drone_data(self):
         # creates a dictionary object out of the drone data
-        droneData = {
-            "id": self.id,  # Make this dynamic
-            "ip:": self.ip,
-            "airspeed": self.vehicle.airspeed,
-            "latitude": self.vehicle.location.global_frame.lat,
-        # Change from strings to have server handle dronekit objects
-            "longitude": self.vehicle.location.global_frame.lon,
-            "altitude": self.vehicle.location.global_relative_frame.alt,
-            "armed": self.vehicle.armed,
-            "mode": self.vehicle.mode.name
-        }
-        return droneData
+        return type('obj', (object,), {
+                                        "id": self.id,
+                                        "ip": self.ip,
+                                        "airspeed": self.vehicle.airspeed,
+                                        "latitude": self.vehicle.location.global_frame.lat,
+                                        "longitude": self.vehicle.location.global_frame.lon,
+                                        "altitude": self.vehicle.location.global_relative_frame.alt,
+                                        "armed": self.vehicle.armed,
+                                        "mode": self.vehicle.mode.name
+                                      }
+                    )
 
     # =============================VEHICLE CONTROL FUNCTIONS=================================================
     # =======================================================================================================
@@ -185,7 +177,7 @@ class Drone():
             else:
                 self.logger.info("Cannot Position This Drone In Formation")
 
-        #Add more else if for more formation types
+        # Add more else if for more formation types
 
         else:
             self.logger.info("No such formation: " + self.formation)
@@ -266,20 +258,20 @@ class Drone():
         # Will eventually need to change below to wait for each drone in the network to be ready...not just one
         drones = 0
         while (drones < size):
-            for i in range (0,size):
-                slave_params = self.get_data_from_server("/dronedata", {'droneID':i})
+            for i in range(0, size):
+                slave_params = self.get_data_from_server("/dronedata", {'droneID': i})
                 if slave_params == "NO_DATA":
                     if drones == 0:
                         self.logger.info("No Drones Found in the Swarm.")
                     else:
                         self.logger.info((str)(drones) + " Drone(s) found")
-                    self.logger.info("Slave: " + (str)(drones+1) + " not found in swarm")
+                    self.logger.info("Slave: " + (str)(drones + 1) + " not found in swarm")
                     time.sleep(1)
                 else:
                     self.logger.info("Found New Drone!")
 
         self.logger.info("Found " + (str)(drones) + "Drones in the Swarm.")
-        for i in range (i,size):
+        for i in range(i, size):
             swarm_params = self.get_data_from_server("/dronedata", {'droneID': i})
             self.logger.info(swarm_params)
 
@@ -292,14 +284,16 @@ class Drone():
             time.sleep(0.5)
             drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
 
-        while float(drone_params["altitude"]) <= float(self.get_drone_data()["altitude"] * .95):  # FIGURE OUT HOW TO DEAL IN VALUES NOT STRINGS
+        while float(drone_params["altitude"]) <= float(
+                self.get_drone_data()["altitude"] * .95):  # FIGURE OUT HOW TO DEAL IN VALUES NOT STRINGS
             self.logger.info("Drone " + droneID + " Stats: " + drone_params["altitude"])
             drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
         self.logger.info("Drone " + droneID + " Has Matched Altitude...")
 
     def wait_for_swarm_to_match_altitude(self, swarm_size):
-        for i in range (0,swarm_size):
-            self.logger.info("Waiting for Drone: " + (str)(i) + " to reach " + self.vehicle.location.global_relative_frame.alt)
+        for i in range(0, swarm_size):
+            self.logger.info(
+                "Waiting for Drone: " + (str)(i) + " to reach " + self.vehicle.location.global_relative_frame.alt)
             self.wait_for_drone_match_altitude(i)
 
     def wait_for_drone_reach_altitude(self, droneID, altitude):
@@ -309,7 +303,8 @@ class Drone():
             time.sleep(1)
             drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
         self.logger.info("OTHER DRONES PARAMS" + str(drone_params))
-        while float(drone_params["altitude"]) <= altitude * .95:  # FIGURE OUT HOW TO DEAL IN VALUES NOT STRINGS #ADD TRY EXCEPT FOR IF THE DATA CAME BACK AS STRING AND NOT OBJECT
+        while float(drone_params[
+                        "altitude"]) <= altitude * .95:  # FIGURE OUT HOW TO DEAL IN VALUES NOT STRINGS #ADD TRY EXCEPT FOR IF THE DATA CAME BACK AS STRING AND NOT OBJECT
             self.logger.info("Drone " + droneID + " Stats: " + drone_params["altitude"])
             drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
         self.logger.info("Drone " + droneID + " Has Reached Altitude...")
@@ -329,7 +324,7 @@ class Drone():
             time.sleep(.75)
 
     def arm_formation(self, droneID):
-        #Treat drone droneID as a TREAP for a formation
+        # Treat drone droneID as a TREAP for a formation
         drone_params = self.get_data_from_server("/dronedata", {'droneID': '1'})
         self.logger.info("Drone: " + droneID + " Parameters Came Back As: " + drone_params)
 
@@ -372,3 +367,5 @@ class Drone():
     def autoGoTo(self):
         self.mission.executeAutoGoTo()
 
+    def toString(self):
+        return ("id: " + self.id + ", " + "ip" + self.ip + ", " + "self.webserver" + self.webserver)

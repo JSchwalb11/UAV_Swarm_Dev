@@ -3,51 +3,47 @@
 # Desc: This script controls the server routing and handling of HTTP requests from the drones...
 # Creation Date: 12/~/2017
 #=============================================================================================================
-from flask import request, render_template
-from flask_api import FlaskAPI
-from flask_restful import reqparse, abort, Api, Resource
-
-
+from flask import request, render_template, Flask
 from droneData2 import Swarm
 from droneBrain2 import Drone
+#from delHandler import delHandler
+#from addHandler import addHandler
+from flask_restful import Resource, Api, abort, reqparse
+import gevent.pywsgi
 
-app = FlaskAPI(__name__)
-api = Api(app)
 
 
+class Server():
+
+    def __init__(self, swarm):
+        self.swarm = swarm
+
+        self.app = Flask("abc")
+        self.app = self.app.register_blueprint
+        self.api = Api(self.app)
+
+        self.api.add_resource(Swarm.getSwarm(self.swarm), '/Swarm')
+        for idx, drone in enumerate(self.swarm):
+            self.newDrone(drone)
+
+        if __name__ == "__main__":
+            self.gevent_server = gevent.pywsgi.WSGIServer(('', 5000), self.app)
+            self.gevent_server.serve_forever() #instead of self.app.run()
 
 
-class Swarm(Resource):
+    def newDrone(self, drone):
+        self.api.add_resource(Swarm.getDrone(self.swarm, drone.id))
+        self.api.add_resource(drone.get_drone_data(), '/Swarm/' + str(drone.id))
 
-    def __init__(self):
-        self.Swarm = Drone([])
-
-    def abort_if_drone_doesnt_exist(self, droneID):
-        if Swarm.droneExists(droneID):
-            abort(404, message="Drone {} doesn't exist".format(Drone.id))
-
-    def get(self, todo_id):
-        abort_if_drone_doesnt_exist()
-        return TODOS[todo_id]
-
-    def delete(self, todo_id):
-        abort_if_todo_doesnt_exist(todo_id)
-        del TODOS[todo_id]
-        return '', 204
-
-    def put(self, todo_id):
-        args = parser.parse_args()
-        task = {'task': args['task']}
-        TODOS[todo_id] = task
-        return task, 201
 
 
 #=============================CREATE A SWARM INSTANCE===================================================
 #=======================================================================================================
-swarm = Swarm()
+
 
 
 #=============================HANDLE REQUESTS FOR ADDING DRONE TO SWARM=================================
+"""
 @app.route('/')
 def index():
     return render_template('webpage.html')
@@ -102,7 +98,7 @@ def clientRequestedDroneData():
 
     print("==========================NO_DATA============================")
     return "NO_DRONE_DATA"
-"""
+
 def processDroneData():
     if request.method == 'GET':
         print("\n=================GET_DRONE_DATA=============================")
@@ -121,7 +117,6 @@ def processDroneData():
         print("\nError Occured While Attempting To Update Drone Data\nError is likely due to drone no longer in swarm, or error occured in droneData.py > updateDroneData()")
         print("=====================NO_DATA=================================")
         return "NO_DATA"
-"""
 
 #=============================HANDLE REQUESTS FOR SWARM DATA============================================
 #=======================================================================================================
@@ -145,5 +140,5 @@ def clientRequestedGui():
 
 #=============================RUN THE SERVER============================================================
 #=======================================================================================================
-if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=5000,debug=False)
+
+"""
