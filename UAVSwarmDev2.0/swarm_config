@@ -1,0 +1,32 @@
+{
+  "Drones": [
+    {
+      "id": 1,
+      "ip": "127.0.0.1",
+      "port": 5760,
+      "sitl": true,
+      "webport": 5000
+    },
+    {
+      "id": 2,
+      "ip": "127.0.0.1",
+      "port": 5760,
+      "sitl": true,
+      "webport": 5000
+    },
+    {
+      "id": 3,
+      "ip": "127.0.0.1",
+      "port": 5760,
+      "sitl": true,
+      "webport": 5000
+    },
+    {
+      "id": 4,
+      "ip": "127.0.0.1",
+      "port": 5760,
+      "sitl": true,
+      "webport": 5000
+    }
+  ]
+}
