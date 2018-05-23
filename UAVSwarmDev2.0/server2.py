@@ -22,7 +22,7 @@ class Server():
         self.app = self.app.register_blueprint
         self.api = Api(self.app)
 
-        self.api.add_resource(Swarm.getSwarm(self.swarm), '/Swarm')
+        self.api.add_resource(Swarm.get_swarm(self.swarm), '/Swarm')
         for idx, drone in enumerate(self.swarm):
             self.newDrone(drone)
 
@@ -32,7 +32,7 @@ class Server():
 
 
     def newDrone(self, drone):
-        self.api.add_resource(Swarm.getDrone(self.swarm, drone.id))
+        self.api.add_resource(Swarm.get_drone(self.swarm, drone.id))
         self.api.add_resource(drone.get_drone_data(), '/Swarm/' + str(drone.id))
 
 

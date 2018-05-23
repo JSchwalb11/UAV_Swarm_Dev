@@ -9,11 +9,11 @@ class addHandler(tornado.web.RequestHandler):
         self.swarm = swarm
 
     def get(self, droneID):
-        self.write(Swarm.getDrone(self.swarm, droneID))
+        self.write(Swarm.get_drone(self.swarm, droneID))
 
     def post(self):
         data = json.loads(self.request.body)
-        if Swarm.droneIndex(self.swarm, data['id']):
-            self.write(Swarm.updateDroneInfo(self.swarm, data))
+        if Swarm.drone_index(self.swarm, data['id']):
+            self.write(Swarm.update_drone_Info(self.swarm, data))
         else:
-            self.write(Swarm.addDrone(self.swarm, data))
+            self.write(Swarm.add_drone(self.swarm, data))

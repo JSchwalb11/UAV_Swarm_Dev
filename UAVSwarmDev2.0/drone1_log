@@ -6514,3 +6514,196 @@ Server Responded With: 200 {"mode": "STABILIZE", "id": 1, "altitude": "None", "i
 2018-05-21 12:40:05,633 - drone1_log - INFO - Basic pre-arm checks
 2018-05-21 12:40:05,633 - drone1_log - INFO -  Waiting for vehicle to initialize...
 2018-05-21 12:40:06,634 - drone1_log - INFO -  Waiting for vehicle to initialize...
+2018-05-23 00:03:31,884 - drone1_log - INFO - Basic pre-arm checks
+2018-05-23 00:03:31,912 - drone1_log - INFO - Arming motors
+2018-05-23 00:03:31,912 - drone1_log - INFO - Waiting for arming...
+2018-05-23 00:03:32,913 - drone1_log - INFO - Waiting for arming...
+2018-05-23 00:03:33,915 - drone1_log - INFO - Waiting for arming...
+2018-05-23 00:03:34,916 - drone1_log - INFO - Waiting for arming...
+2018-05-23 00:03:35,918 - drone1_log - INFO - Waiting for arming...
+2018-05-23 00:03:36,920 - drone1_log - INFO - Waiting for arming...
+2018-05-23 00:03:37,921 - drone1_log - INFO - Vehicle Armed!
+2018-05-23 00:03:37,921 - drone1_log - INFO - Taking off!
+2018-05-23 00:03:37,922 - drone1_log - INFO - Vehicle Altitude: 0.01
+2018-05-23 00:03:38,216 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:38,424 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:38,631 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:38,672 - drone1_log - INFO - Vehicle Altitude: 0.01
+2018-05-23 00:03:38,889 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:39,097 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:39,423 - drone1_log - INFO - Vehicle Altitude: 0.01
+2018-05-23 00:03:39,455 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:39,612 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:39,820 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:40,129 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:40,174 - drone1_log - INFO - Vehicle Altitude: 0.52
+2018-05-23 00:03:40,335 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:40,641 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:40,846 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:40,925 - drone1_log - INFO - Vehicle Altitude: 1.6
+2018-05-23 00:03:41,053 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:41,359 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:41,566 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:41,677 - drone1_log - INFO - Vehicle Altitude: 2.99
+2018-05-23 00:03:41,872 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:42,076 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:42,283 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:42,428 - drone1_log - INFO - Vehicle Altitude: 4.51
+2018-05-23 00:03:42,590 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:42,797 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:43,104 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:43,179 - drone1_log - INFO - Vehicle Altitude: 6.11
+2018-05-23 00:03:43,312 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:43,467 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:43,774 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:43,930 - drone1_log - INFO - Vehicle Altitude: 7.66
+2018-05-23 00:03:43,980 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:44,286 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:44,494 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:44,682 - drone1_log - INFO - Vehicle Altitude: 8.87
+2018-05-23 00:03:44,703 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:44,962 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:45,169 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:45,432 - drone1_log - INFO - Vehicle Altitude: 9.5
+2018-05-23 00:03:45,432 - drone1_log - INFO - Reached target altitude
+2018-05-23 00:03:45,477 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:45,682 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:45,836 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:46,144 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:46,351 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:46,609 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:46,815 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:47,021 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:47,277 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:47,484 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:47,792 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:47,998 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:48,155 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:48,461 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:48,665 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:48,972 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:49,177 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:49,382 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:49,690 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:49,846 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:50,152 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:50,357 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:50,563 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:50,872 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:51,078 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:51,385 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:51,589 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:51,794 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:52,101 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:52,308 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:52,615 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:52,821 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:53,027 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:53,334 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:53,543 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:53,799 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:54,004 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:54,209 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:54,516 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:54,723 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:55,030 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:55,235 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:55,441 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:55,698 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:55,904 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:56,210 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:56,416 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:56,623 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:56,879 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:57,085 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:57,391 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:57,597 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:57,802 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:58,110 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:58,318 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:58,625 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:58,831 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:59,038 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:59,293 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:59,501 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:03:59,809 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:00,015 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:00,222 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:00,529 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:00,737 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:00,993 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:01,198 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:01,402 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:01,710 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:01,918 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:02,226 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:02,385 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:02,592 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:02,898 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:03,103 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:03,409 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:03,613 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:03,819 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:04,129 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:04,338 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:04,594 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:04,798 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:05,004 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:05,311 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:05,517 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:05,823 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:06,028 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:06,236 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:06,492 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:06,698 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:07,004 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:07,209 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:07,414 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:07,721 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:07,928 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:08,235 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:08,391 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:08,596 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:08,902 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:09,108 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:09,415 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:09,621 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:09,827 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:10,135 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:10,293 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:10,598 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:10,803 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:11,007 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:11,314 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:11,521 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:11,830 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:12,036 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:12,192 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:12,499 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:12,704 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:13,011 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:13,216 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:13,421 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:13,728 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:13,935 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:14,241 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:14,397 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:14,604 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:14,914 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:15,125 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:15,437 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:15,594 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:15,799 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:16,109 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:16,317 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:16,625 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:16,834 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:16,991 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:17,300 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:17,506 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:17,814 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:18,021 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:18,228 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:18,540 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:18,699 - drone1_log - INFO - Error communicating with server1
+2018-05-23 00:04:19,009 - drone1_log - INFO - Error communicating with server1

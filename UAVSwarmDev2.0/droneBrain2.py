@@ -4,6 +4,8 @@ import logging
 
 from mission import Mission
 from dronekit import connect, VehicleMode, LocationGlobalRelative
+from dronekit_sitl import SITL
+from config import Config
 import time
 import requests
 import time
@@ -21,12 +23,22 @@ class Drone:
         self.id = config.id
         self.ip = config.ip
         self.sitl = config.sitl
+        self.sitlInstance = SITL('/home/dino/.dronekit/sitl/copter-3.3/apm')
+        if self.sitl:
+            sitl_args = ['--instance ' + str(self.id-1), '-I0', '--model', 'quad', '--home=-35.363261,149.165230,584,353']
+            self.sitlInstance.launch(sitl_args, verbose=False, await_ready=False, restart=True)
+            self.connection_string = self.sitlInstance.connection_string()
+        else:
+            self.connection_string = '/dev/tty/ACM0'
+
         #        self.port = port
-        self.connection_string = dronekit_sitl.start_default().connection_string()#str(self.ip) + ":" + str(self.default_port)
+        #self.connection_string = dronekit_sitl.start_default().connection_string()
         self.webserver = str(self.ip) + ":" + str(self.default_webserver_port)
         print('\nConnecting to vehicle on: %s\n' % self.connection_string)
         self.vehicle = connect(self.connection_string)
+        print("Drone: " + str(self.id) + " connected!")
         self.drone_data = self.get_drone_data()
+        self.print_drone_data()
         self.mission = Mission(self.vehicle)
         # logger config
         self.logger = logging.getLogger("drone" + (str)(self.id) + "_log")
@@ -48,7 +60,7 @@ class Drone:
     def location_callback(self, self2, attr_name, value):  # value type is dronekit.LocationGlobalRelative
         if True:  # Replace tru with a way to check if any values in location object changed
             try:
-                self.send_data_to_server("/dronedata", self.get_drone_data())
+                self.update_self_to_swarm("/Swarm")
                 alt = self.vehicle.location.global_relative_frame.alt
                 # print("Alt:",alt)
                 if (
@@ -63,55 +75,37 @@ class Drone:
     def armed_callback(self, self2, attr_name, value):
         self.logger.info("Armed Status Of Drone: " + value)
         try:
-            self.send_data_to_server("/dronedata", self.get_drone_data())
+            self.update_self_to_swarm("/Swarm")
         except:
             self.logger.info("Error communicating with server2")
 
     def mode_callback(self, self2, attr_name, value):
         self.logger.info("Mode Of Drone: " + str(value))
         try:
-            self.send_data_to_server("/dronedata", self.get_drone_data())
+            self.update_self_to_swarm("/Swarm")
         except:
             self.logger.info("Error communicating with server3")
 
     # =============================COMMUNICATION TO SERVER===================================================
     # =======================================================================================================
-    def send_data_to_server(self, route, data):
-        url = self.webserver + route + "/" + str(self.id)
+
+    def update_self_to_swarm(self, route):
+        url = self.webserver + route
         try:
-            r = requests.post(url, json.dumps(data))
+            r = requests.post(url, self.get_drone_data())
             self.logger.info("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
         except requests.HTTPError:
             self.logger.info(str(requests.HTTPError))
 
-    def get_data_from_server(self, route, id):
-        url = self.webserver + route + "/" + str(id)
+    def get_data_from_server(self, route):
+        url = self.webserver + route + "/" + str(self.id)
         try:
-
             r = requests.get(url)
-            self.logger.info("\nServer Responded With: " + str(r.status_code) + " " + (str)(json.dumps(data)) + "\n")
-            return json.loads(r.text)
-
+            self.logger.info("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
+            return Config(json.loads(r.text))
         except requests.HTTPError:
-            self.logger.info("Error Getting Data From The Server, Is It Running?")  # printed not loggered?
+            self.logger.info("HTTP " + str(requests.HTTPError))
             return "NO_DATA"
-
-        # used to see how the server is responding. Maybe just print to log and not console
-
-        # self.logger.info("\n\nRETURNING: " + json.dumps(data) + "\n\n")
-
-    def add_to_swarm(self):
-        self.send_data_to_server("/adddrone", self.get_drone_data())
-
-    def remove_from_swarm(self):
-        return self.send_data_to_server("/removedrone", self.get_drone_data())
-
-    def get_swarm_data(self):
-        return self.get_data_from_server("/swarmdata", None)
-
-    def abort_if_drone_doesnt_exist(self):
-        if Swarm.droneExists(Drone.id):
-            abort(404, message="Drone {} doesn't exist".format(Drone.id))
 
     # =============================VEHICLE INFORMATION FUNCTIONS=================================================
     # =======================================================================================================
@@ -124,10 +118,17 @@ class Drone:
                                         "latitude": self.vehicle.location.global_frame.lat,
                                         "longitude": self.vehicle.location.global_frame.lon,
                                         "altitude": self.vehicle.location.global_relative_frame.alt,
+                                        "armable": self.vehicle.is_armable,
                                         "armed": self.vehicle.armed,
                                         "mode": self.vehicle.mode.name
                                       }
                     )
+
+    def print_drone_data(self):
+        drone_params = self.get_drone_data()
+        string_to_print = "Drone ID: " + str(drone_params.id) + "\nDrone IP: " + str(drone_params.ip) + "\nDrone A/S: " + str(drone_params.airspeed) + "\nDrone Location: (" + str(drone_params.latitude) + ", " + str(drone_params.longitude) + ", " + str(drone_params.altitude) + ")" + "\nDrone Armed: " + str(drone_params.armed) + "\nDrone Mode: " + drone_params.mode
+        print(string_to_print)
+
 
     # =============================VEHICLE CONTROL FUNCTIONS=================================================
     # =======================================================================================================
@@ -143,52 +144,55 @@ class Drone:
     def set_formation(self, formationName):
         self.formation = formationName
 
-    def move_to_formation(self):
-        drone_params = self.get_data_from_server("/dronedata", {'droneID': '1'})
-        droneLat = float(drone_params['latitude'])  # would be better to just get the location object...
+    def move_to_formation(self, aTargetAltitude):
+        drone_params = self.get_drone_data()
+        droneLat = float(drone_params)  # would be better to just get the location object...
         droneLon = float(drone_params['longitude'])
         droneAlt = float(drone_params['altitude'])
 
-        if (self.formation == "triangle"):
+        #Check altitude is 10 metres so we can manuver around eachother
 
-            if (self.id == "1"):
-                # Master, so take point
-                pass
+        if aTargetAltitude is 10:
 
-            elif (self.id == "2"):
-                # Slave 1, so take back-left
-                # print("Drone 2 Moving To Position")
-                self.vehicle.simple_goto(droneLat - .0000018, droneLon - .0000018, droneAlt)
-                # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
-                    self.vehicle.location.global_relative_frame.lon) + "," + str(
-                    self.vehicle.location.global_relative_frame.alt))
+            if (self.formation == "triangle"):
 
-            elif (self.id == "3"):
-                # Slave 2, so take back-right
-                # print("Drone 3 Moving To Position")
-                self.vehicle.simple_goto(droneLat - .0000018, droneLon + .0000018, droneAlt)
+                if (self.id == "1"):
+                    # Master, so take point
+                    self.vehicle.simple_goto(self.vehicle.location.global_frame.lat, self.vehicle.location.global_frame.lon, aTargetAltitude)
 
-                # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
-                    self.vehicle.location.global_relative_frame.lon) + "," + str(
-                    self.vehicle.location.global_relative_frame.alt))
+                elif (self.id == "2"):
+                    # Slave 1, so take back-left
+                    # print("Drone 2 Moving To Position")
+                    self.vehicle.simple_goto(droneLat - .0000018, droneLon - .0000018, aTargetAltitude-3)
+                    # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
+                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                        self.vehicle.location.global_relative_frame.lon) + "," + str(
+                        self.vehicle.location.global_relative_frame.alt))
 
+                elif (self.id == "3"):
+                    # Slave 2, so take back-right
+                    # print("Drone 3 Moving To Position")
+                    self.vehicle.simple_goto(droneLat - .0000018, droneLon + .0000018, aTargetAltitude + 3)
+
+                    # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
+                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                        self.vehicle.location.global_relative_frame.lon) + "," + str(
+                        self.vehicle.location.global_relative_frame.alt))
+
+                else:
+                    self.logger.info("Cannot Position This Drone In Formation")
+            # Add more else if for more formation types
             else:
-                self.logger.info("Cannot Position This Drone In Formation")
-
-        # Add more else if for more formation types
+                self.logger.info("No such formation: " + self.formation)
 
         else:
-            self.logger.info("No such formation: " + self.formation)
+            print("Invalid formation altitude!")
+            print("Please change formation altitude to 10 metres so the drones can manuver around eachother safetly!")
 
-    def move_to_position(self, lat, lon, alt):
-        location = LocationGlobalRelative(lat, lon, alt)
-        self.vehicle.simple_goto(location)
 
     def follow_in_formation(self, droneID):
         # print("ENTERING FORMATION:", formationName)
-        self.move_to_formation()
+        self.move_to_formation(10)
         # print("About to Enter Loop:", self.vehicle.mode.name)
 
     def arm(self):
@@ -199,10 +203,10 @@ class Drone:
         while not self.vehicle.is_armable:
             self.logger.info(" Waiting for vehicle to initialize...")
             time.sleep(1)
+        self.vehicle.mode = VehicleMode("GUIDED")
 
         self.logger.info("Arming motors")
         # Copter should arm in GUIDED mode
-        self.vehicle.mode = VehicleMode("GUIDED")
         self.vehicle.armed = True
 
         # Confirm vehicle armed before attempting to take off
@@ -244,7 +248,7 @@ class Drone:
             time.sleep(3)
             self.vehicle.armed = True
 
-        self.send_data_to_server("/dronedata", self.get_drone_data())
+        self.update_self_to_swarm("/swarm")
 
     def shutdown(self):
         self.vehicle.remove_attribute_listener('location.global_relative_frame', self.location_callback)
@@ -254,28 +258,6 @@ class Drone:
 
     # =================================MISSION FUNCTIONS=====================================================
     # =======================================================================================================
-    def wait_for_swarm_ready(self, size):  # THIS FUNCTION IS CURRENTLY MASTER SPECIFIC. ONLY CALL FROM MASTER
-        # Will eventually need to change below to wait for each drone in the network to be ready...not just one
-        drones = 0
-        while (drones < size):
-            for i in range(0, size):
-                slave_params = self.get_data_from_server("/dronedata", {'droneID': i})
-                if slave_params == "NO_DATA":
-                    if drones == 0:
-                        self.logger.info("No Drones Found in the Swarm.")
-                    else:
-                        self.logger.info((str)(drones) + " Drone(s) found")
-                    self.logger.info("Slave: " + (str)(drones + 1) + " not found in swarm")
-                    time.sleep(1)
-                else:
-                    self.logger.info("Found New Drone!")
-
-        self.logger.info("Found " + (str)(drones) + "Drones in the Swarm.")
-        for i in range(i, size):
-            swarm_params = self.get_data_from_server("/dronedata", {'droneID': i})
-            self.logger.info(swarm_params)
-
-        self.logger.info("Swarm ready!")
 
     def wait_for_drone_match_altitude(self, droneID):
         drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
@@ -319,7 +301,7 @@ class Drone:
             self.logger.info("Vehicle Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
             if self.vehicle.location.global_relative_frame.alt >= aTargetAltitude * .95:
                 self.logger.info("Reached target altitude")
-                self.send_data_to_server("/dronedata", self.get_drone_data())
+                self.update_self_to_swarm("/Swarm")
                 break
             time.sleep(.75)
 
@@ -364,8 +346,8 @@ class Drone:
             time.sleep(1)
         self.logger.info("Landed!")
 
-    def autoGoTo(self):
+    def auto_go_to(self):
         self.mission.executeAutoGoTo()
 
-    def toString(self):
+    def to_string(self):
         return ("id: " + self.id + ", " + "ip" + self.ip + ", " + "self.webserver" + self.webserver)

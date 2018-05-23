@@ -8,8 +8,8 @@ class delHandler(tornado.web.RequestHandler):
         self.swarm = swarm
 
     def get(self, droneID):
-        drone = self.swarm.getDrone(self.swarm, droneID)
-        result = self.swarm.removeDrone(drone['id]'])
+        drone = self.swarm.get_drone(self.swarm, droneID)
+        result = self.swarm.remove_drone(drone['id]'])
         if result:
             self.write("Deleted Drone: {0} successfully".format(id))
             self.set_status(200)
@@ -20,7 +20,7 @@ class delHandler(tornado.web.RequestHandler):
     def post(self):
         data = json.loads(self.request.body)
         id = data["id"]
-        result = self.swarm.removeDrone(id)
+        result = self.swarm.remove_drone(id)
         if result:
             self.write("Deleted Drone: {0} successfully".format(id))
             self.set_status(200)

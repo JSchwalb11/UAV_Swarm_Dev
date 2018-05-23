@@ -10,21 +10,21 @@
     {
       "id": 2,
       "ip": "127.0.0.1",
-      "port": 5760,
+      "port": 5770,
       "sitl": true,
       "webport": 5000
     },
     {
       "id": 3,
       "ip": "127.0.0.1",
-      "port": 5760,
+      "port": 5780,
       "sitl": true,
       "webport": 5000
     },
     {
       "id": 4,
       "ip": "127.0.0.1",
-      "port": 5760,
+      "port": 5790,
       "sitl": true,
       "webport": 5000
     }
