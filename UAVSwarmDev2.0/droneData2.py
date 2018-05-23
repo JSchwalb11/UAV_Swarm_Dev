@@ -48,8 +48,8 @@ class Swarm:
     # =======================================================================================================
     def __init__(self, config):
         self.swarm = []
-        self.webserver = config.ip
-        self.webport = config.webport
+        self.webserver = config.Swarm.ip
+        self.webport = config.Swarm.webport
 
     # =============================MEMBER FUNCTIONS==========================================================
     # =======================================================================================================
@@ -121,7 +121,7 @@ class Swarm:
             print("HTTP " + str(requests.HTTPError))
             return "NO_DATA"
 
-    def wait_for_swarm_ready(self):  # THIS FUNCTION IS CURRENTLY MASTER SPECIFIC. ONLY CALL FROM MASTER
+    def wait_for_swarm_ready(self):
         swarm_ready_status = []
 
         while not assert_true(swarm_ready_status):

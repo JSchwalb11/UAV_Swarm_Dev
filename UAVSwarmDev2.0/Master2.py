@@ -1,132 +1,136 @@
 from droneBrain2 import Drone
-from dronekit import LocationGlobalRelative
+from config import Config
 import random
 
 import argparse
-parser = argparse.ArgumentParser(description='Example Arguments:\n'
-                                             '--connection_string /dev/ttyACM0\n'
-                                             '--connection_string tcp:127.0.0.1:5760\n'
-                                             '--sitl True'
-                                             '--id 1'
-                                             '--ip 127.0.0.1')
+
+from droneData2 import Swarm
+
+parser = argparse.ArgumentParser(description='Example Arguments:'
+                                             '\n--connection_string /dev/ttyACM0'
+                                             '\n--instances 1 , enter the total number of drones in the swarm'
+                                             '\n--webport 5000'
+                                             '\n--port 5760 , this is for the sitl instance'
+                                             '\n--sitl True'
+                                             '\n--id 1'
+                                             '\n--ip 127.0.0.1')
 parser.add_argument('--sitl')
+parser.add_argument('--instance')
 parser.add_argument('--connection_string')
 parser.add_argument('--port')
+parser.add_argument('--webport')
 parser.add_argument('--id')
 parser.add_argument('--ip')
 
 args = parser.parse_args()
 
 def sitlArgExists():
-    if (args.sitl == "True" or args.connection_string == "False"):
+    if args.sitl:
         return True
-    else:
-        print("Invalid sitl argument.")
-        return False
+    return False
+
+def instanceExists():
+    if args.instance:
+        return True
+    return False
+
 
 def connectionArgExists():
     if (args.connection_string != None):
         return True
-    else:
-        print("Null connection_string argument.")
-        return False
+    print("Null connection_string argument.")
+    return False
 
 def portArgExists():
-    if (args.port != None):
-        try:
-            if ((int)(args.port) <= 65535 and (int)(args.port) <= 0):
-                return True
-            else:
-                return False
-        except ValueError:
-            print("Invalid port argument.")
-            return False
+    if args.port:
+        if ((int)(args.port) <= 65535 and (int)(args.port) <= 0):
+            return True
+    return False
+
+def webport_arg_exists():
+    if args.webport:
+        return True
+    return False
 
 def idArgExists():
-    if (args.id != None):
+    if args.id:
         try:
-            if ((int)(args.id)):
-                return True
-            else:
-                return False
+            (int)(args.id)
+            return True
         except ValueError:
             print("Invalid id argument.")
             return False
 
 def ipArgsExists():
-    if (args.ip != None):
+    if args.ip:
         return True
-    else:
-        print("Null ip argument")
-        return False
+    return False
 
-default_connection_string = '127.0.0.1'
-default_ip = '192.168.1.1' #change depending on drone's role - 192.168.1.[1-10]
+def instance_arg_exists():
+    if args.instance:
+        return True
+    return False
+
+
+default_id = random.randint(1, 10)
+default_ip = '127.0.0.1' #change depending on drone's role - 192.168.1.[1-10]
 default_port = '5760'
+default_webport = '5000'
+default_connection_string = default_ip + ":" + default_port
+instance = 0
+sitl = False
+swarm_config = {
+    "Swarm": {
+        "size": instance,
+        "ip": default_ip,
+        "webport": default_webport
+    },
+    "Drones": []
+}
 
-if(sitlArgExists()):
+if sitlArgExists():
     sitl = args.sitl
-else:
-    sitl = False
 
-if(connectionArgExists()):
-    connection_string = args.connection_string
-else:
-    print("No connection_string argument.")
-    print("Assigning default connection string: " + default_connection_string)
-    connection_string = default_connection_string
-    print("SITL intializing...")
-    sitl = True
+if connectionArgExists():
+    default_connection_string = args.connection_string
 
-if(portArgExists()):
-    port = args.port
-    connection_string = connection_string + ":" + port
-else:
-    port = default_port
+if portArgExists():
+    default_port = args.port
 
-if(idArgExists()):
-    id = args.id
-else:
-    id = random.randint(100,1000)
+if webport_arg_exists():
+    default_webport = args.webport
 
-if(ipArgsExists()):
-    ip = args.ip
-else:
-    print("Assigning default ip to drone...")
-    ip = default_ip
+if idArgExists():
+    default_id = args.id
 
+if ipArgsExists():
+    default_ip = args.ip
 
+for idx in (0, instance):
+    drone_config = {
+            "id": default_id + idx,
+            "ip": default_ip,
+            "port": str(int(default_port) + (instance * 10)),
+            "sitl": sitl,
+            "webport": default_webport
+    }
 
-#====================Waypoints====================
-lat = []
-lat.append(47.919787)
-lat.append(47.919909)
-lat.append(47.920198)
-lat.append(47.920442)
-lat.append(47.920609)
+    swarm_config.get('Drones').append((drone_config))
 
-lon = []
-lon.append(-97.064406)
-lon.append(-97.065055)
-lon.append(-97.064737)
-lon.append(-97.065055)
-lon.append(-97.064410)
+print(swarm_config.get("Drones").__len__())
 
-alt = []
-alt.append(15)
-alt.append(12)
-alt.append(5)
-alt.append(12)
-alt.append(15)
+#swarm_config = Config(swarm_config)
 
-print("=====================Drone #" + str(id) + "=======================")
-print("==================="+default_ip+"===================")
+swarm = Swarm(swarm_config.Swarm)
+
+for idx in enumerate(swarm_config.Drones):
+    drone = Drone(swarm_config.Drones[idx])
+    swarm.add_drone(drone)
+
+print ("Finished!")
 
 
-
-
-
-
+"""
 if (sitl):
     import dronekit_sitl
     sitl = dronekit_sitl.start_default(47.920198, -97.064737)
@@ -145,3 +149,4 @@ drone.mission.autopilot()
 drone.shutdown()
 
 print("Flight complete!")
+"""

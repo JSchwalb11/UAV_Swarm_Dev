@@ -3,11 +3,8 @@
 # Desc: This script controls the server routing and handling of HTTP requests from the drones...
 # Creation Date: 12/~/2017
 #=============================================================================================================
-from flask import request, render_template, Flask
+from flask import Flask
 from droneData2 import Swarm
-from droneBrain2 import Drone
-#from delHandler import delHandler
-#from addHandler import addHandler
 from flask_restful import Resource, Api, abort, reqparse
 import gevent.pywsgi
 

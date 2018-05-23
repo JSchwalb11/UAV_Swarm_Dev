@@ -6,18 +6,15 @@ from mission import Mission
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 from dronekit_sitl import SITL
 from config import Config
-import time
+
 import requests
 import time
-import dronekit_sitl
-import argparse
 
 
 class Drone:
-    formation = "triangle"
 
     def __init__(self, config):
-        self.default_webserver_ip = config.ip #'192.168.1.1'  # change depending on drone's role - 192.168.1.[1-10]
+        self.default_webserver_ip = config.ip
         self.default_port = config.port
         self.default_webserver_port = config.webport
         self.id = config.id
@@ -31,8 +28,7 @@ class Drone:
         else:
             self.connection_string = '/dev/tty/ACM0'
 
-        #        self.port = port
-        #self.connection_string = dronekit_sitl.start_default().connection_string()
+        self.formation = None
         self.webserver = str(self.ip) + ":" + str(self.default_webserver_port)
         print('\nConnecting to vehicle on: %s\n' % self.connection_string)
         self.vehicle = connect(self.connection_string)
@@ -53,38 +49,23 @@ class Drone:
         self.logger.addHandler(ch)
 
         # Always add the drone to swarm last.
-        #print(self.get_drone_data())
 
     # =============================ATTRIBUTE LISTENER CALLBACKS==============================================
     # =======================================================================================================
-    def location_callback(self, self2, attr_name, value):  # value type is dronekit.LocationGlobalRelative
-        if True:  # Replace tru with a way to check if any values in location object changed
-            try:
-                self.update_self_to_swarm("/Swarm")
-                alt = self.vehicle.location.global_relative_frame.alt
-                # print("Alt:",alt)
-                if (
-                        alt < 2 and self.vehicle.mode.name == "GUIDED"):  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
-                    self.vehicle.airspeed = .2
-            except:
-                self.logger.info("Error communicating with server1")
+    def location_callback(self):
+        self.update_self_to_swarm("/Swarm")
+        self.logger.info("Drone Location Changed: " + str(self.vehicle.location.global_relative_frame))
+        if (self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED"):  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
+            self.vehicle.airspeed = .2
 
-        else:
-            self.logger.info("Location Object Didn't Change")
+    def armed_callback(self):
+        self.logger.info("Drone Armed Status Changed: " + str(self.vehicle.armed))
+        self.update_self_to_swarm("/Swarm")
 
-    def armed_callback(self, self2, attr_name, value):
-        self.logger.info("Armed Status Of Drone: " + value)
-        try:
-            self.update_self_to_swarm("/Swarm")
-        except:
-            self.logger.info("Error communicating with server2")
+    def mode_callback(self):
+        self.logger.info("Mode Changed: " + str(self.vehicle.mode.name))
+        self.update_self_to_swarm("/Swarm")
 
-    def mode_callback(self, self2, attr_name, value):
-        self.logger.info("Mode Of Drone: " + str(value))
-        try:
-            self.update_self_to_swarm("/Swarm")
-        except:
-            self.logger.info("Error communicating with server3")
 
     # =============================COMMUNICATION TO SERVER===================================================
     # =======================================================================================================
@@ -260,36 +241,25 @@ class Drone:
     # =======================================================================================================
 
     def wait_for_drone_match_altitude(self, droneID):
-        drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
-        while drone_params == "NO_DRONE_DATA":
-            self.logger.info("Cannot Find Drone " + str(droneID) + " On The Swarm")
-            time.sleep(0.5)
-            drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
+        self.wait_for_drone_reach_altitude(droneID, self.vehicle.location.global_relative_frame.alt)
 
-        while float(drone_params["altitude"]) <= float(
-                self.get_drone_data()["altitude"] * .95):  # FIGURE OUT HOW TO DEAL IN VALUES NOT STRINGS
-            self.logger.info("Drone " + droneID + " Stats: " + drone_params["altitude"])
-            drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
-        self.logger.info("Drone " + droneID + " Has Matched Altitude...")
+    def wait_for_swarm_to_match_altitude(self):
+        swarm_params = self.get_data_from_server("/Swarm")
 
-    def wait_for_swarm_to_match_altitude(self, swarm_size):
-        for i in range(0, swarm_size):
-            self.logger.info(
-                "Waiting for Drone: " + (str)(i) + " to reach " + self.vehicle.location.global_relative_frame.alt)
-            self.wait_for_drone_match_altitude(i)
+        for idx in enumerate(swarm_params):
+            self.wait_for_drone_match_altitude(idx)
 
     def wait_for_drone_reach_altitude(self, droneID, altitude):
-        drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
-        while drone_params == "NO_DRONE_DATA":
-            self.logger.info("Cannot Find Drone " + str(droneID) + " On The Swarm")
-            time.sleep(1)
-            drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
-        self.logger.info("OTHER DRONES PARAMS" + str(drone_params))
-        while float(drone_params[
-                        "altitude"]) <= altitude * .95:  # FIGURE OUT HOW TO DEAL IN VALUES NOT STRINGS #ADD TRY EXCEPT FOR IF THE DATA CAME BACK AS STRING AND NOT OBJECT
-            self.logger.info("Drone " + droneID + " Stats: " + drone_params["altitude"])
-            drone_params = self.get_data_from_server("/dronedata", {'droneID': droneID})
-        self.logger.info("Drone " + droneID + " Has Reached Altitude...")
+        swarm_params = self.get_data_from_server("/Swarm")
+
+        for idx in enumerate(swarm_params.Drones):
+            if swarm_params.Drones[idx].id == droneID:
+                while (swarm_params.Drones[idx].altitude <= altitude * 0.95):
+                    swarm_params = self.get_data_from_server("/Swarm")
+                    print("Waiting for Drone: " + str(swarm_params.Drones[idx].id) + " to reach " + str(
+                        altitude))
+                    time.sleep(1)
+                self.logger.info("Drone: " + swarm_params.Drones[idx].id + " reached " + str(altitude) + "...")
 
     def arm_and_takeoff(self, aTargetAltitude):
         self.arm()
@@ -304,24 +274,6 @@ class Drone:
                 self.update_self_to_swarm("/Swarm")
                 break
             time.sleep(.75)
-
-    def arm_formation(self, droneID):
-        # Treat drone droneID as a TREAP for a formation
-        drone_params = self.get_data_from_server("/dronedata", {'droneID': '1'})
-        self.logger.info("Drone: " + droneID + " Parameters Came Back As: " + drone_params)
-
-        while drone_params == "NO_DRONE_DATA":
-            self.logger.info("Drone: " + droneID + "Not Found On Swarm")
-            time.sleep(1)
-            drone_params = self.get_data_from_server("/dronedata", {'droneID': '1'})
-
-        if drone_params["armed"] == True:
-            self.logger.info("Drone : " + drone_params["id"] + " armed status - " + drone_params["armed"])
-            self.arm()
-        else:
-            self.logger.info("Drone : " + drone_params["id"] + " armed status - " + drone_params["armed"])
-
-        self.arm_no_GPS()
 
     def goto(self):
         pass
@@ -345,9 +297,6 @@ class Drone:
             self.logger.info("Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
             time.sleep(1)
         self.logger.info("Landed!")
-
-    def auto_go_to(self):
-        self.mission.executeAutoGoTo()
 
     def to_string(self):
         return ("id: " + self.id + ", " + "ip" + self.ip + ", " + "self.webserver" + self.webserver)
