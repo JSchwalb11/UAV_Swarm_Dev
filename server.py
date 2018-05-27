@@ -1,22 +1,51 @@
 #=============================server.py===================================================================
-# Author: Martin Pozniak, Joey Schwalb
+# Author: Martin Pozniak
 # Desc: This script controls the server routing and handling of HTTP requests from the drones...
 # Creation Date: 12/~/2017
-#============================================================================================================= 
-from flask import Flask, request, render_template
-import json 
-from droneData import Swarm
-from flask_api import FlaskAPI
+#=============================================================================================================
+from flask import Flask
+from droneData2 import Swarm
+from flask_restful import Resource, Api, abort, reqparse
+import gevent.pywsgi
 
-app = FlaskAPI(__name__)
+
+
+class Server():
+
+    def __init__(self, swarm):
+        self.swarm = swarm
+
+        self.app = Flask("abc")
+        self.app = self.app.register_blueprint
+        self.api = Api(self.app)
+
+        self.api.add_resource(Swarm.get_swarm(self.swarm), '/Swarm')
+        for idx, drone in enumerate(self.swarm):
+            self.newDrone(drone)
+
+        if __name__ == "__main__":
+            self.gevent_server = gevent.pywsgi.WSGIServer(('', 5000), self.app)
+            self.gevent_server.serve_forever() #instead of self.app.run()
+
+
+    def newDrone(self, drone):
+        self.api.add_resource(Swarm.get_drone(self.swarm, drone.id))
+        self.api.add_resource(drone.get_drone_data(), '/Swarm/' + str(drone.id))
+
+
 
 #=============================CREATE A SWARM INSTANCE===================================================
 #=======================================================================================================
-swarm = Swarm()
+
+
 
 #=============================HANDLE REQUESTS FOR ADDING DRONE TO SWARM=================================
-#=======================================================================================================
-@app.route('/adddrone', methods=['GET', 'POST'])
+"""
+@app.route('/')
+def index():
+    return render_template('webpage.html')
+
+@app.route('/adddrone', methods=['POST'])
 def clientIsAddingDrone():
     if request.method == 'POST':
         print("\n=================ADDING_DRONE=============================")
@@ -31,7 +60,7 @@ def clientIsAddingDrone():
 @app.route('/removedrone', methods=['POST'])
 def clientIsRemovingDrone():
     if request.method == 'POST':
-        print("\n=================REMOVING_DRONE=============================")         
+        print("\n=================REMOVING_DRONE=============================")
         swarm.removeDrone(request.get_json(force=True))
         print("======================PASS=================================\n")
         return swarm.getSwarmData()
@@ -48,12 +77,12 @@ def clientRequestedDroneData():
         try:
             drone = swarm.updateDroneInfo(request.get_json(force=True))
             if drone != "NO_DATA":
-                print("======================PASS====================================") 
+                print("======================PASS====================================")
                 return drone
         except:
             print("\nError Occured While Attempting To Update Drone Data\nError is likely due to drone no longer in swarm, or error occured in droneData.py > updateDroneData()")
             print("=====================NO_DATA=================================")
-            return "NO_DRONE_DATA" 
+            return "NO_DRONE_DATA"
 
 
     if request.method == 'GET':
@@ -67,6 +96,25 @@ def clientRequestedDroneData():
     print("==========================NO_DATA============================")
     return "NO_DRONE_DATA"
 
+def processDroneData():
+    if request.method == 'GET':
+        print("\n=================GET_DRONE_DATA=============================")
+        print("\nGETTING DATA FOR DRONE : ", request.data['droneID'], type(request.data['droneID']))
+        droneToReturn = swarm.getDroneInfo(request.data['droneID'])
+        if droneToReturn is not None:
+            print("Successful Drone data return!")
+            return swarm.getDroneInfo(request.data['droneID'])
+    elif request.method == 'POST':
+        print("\n=================POST_DRONE_DATA=============================")
+        print("Data To Post: ", request.data)
+        drone = swarm.updateDroneInfo(request.get_json(force=True))
+        if drone != "NO_DATA":
+            print("======================PASS====================================")
+            return drone
+        print("\nError Occured While Attempting To Update Drone Data\nError is likely due to drone no longer in swarm, or error occured in droneData.py > updateDroneData()")
+        print("=====================NO_DATA=================================")
+        return "NO_DATA"
+
 #=============================HANDLE REQUESTS FOR SWARM DATA============================================
 #=======================================================================================================
 @app.route('/swarmdata', methods=['GET'])
@@ -78,7 +126,7 @@ def clientRequestedSwarmData():
         print("=======================PASS===============================")
         if swarmToReturn is not None :
             return swarmToReturn
-    print("=======================NO_SWARM_DATA===============================")    
+    print("=======================NO_SWARM_DATA===============================")
     return "NO_SWARM_DATA"
 
 #=============================PROVIDE A GUI FOR THE SYSTEM============================================================
@@ -89,5 +137,5 @@ def clientRequestedGui():
 
 #=============================RUN THE SERVER============================================================
 #=======================================================================================================
-if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=5000,debug=False)
+
+"""
