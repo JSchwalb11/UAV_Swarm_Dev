@@ -8,7 +8,11 @@
 # -------This is not the actual object used to store active drones--------
 # ----a one element list, which contains a dictionary--------------------
 # -----whose keys are the Drone ID, and whose value is another dict containing the params------
-from flask import json
+#from flask import json
+import json
+import time
+import requests
+from config import Config
 #from addHandler import addHandler
 #from delHandler import delHandler
 
@@ -42,18 +46,20 @@ class Swarm:
 
     # =============================SWARM CONSTRUCTOR=========================================================
     # =======================================================================================================
-    def __init__(self):
+    def __init__(self, config):
         self.swarm = []
+        self.webserver = config.size
+        self.webport = config.webport
 
     # =============================MEMBER FUNCTIONS==========================================================
     # =======================================================================================================
 
-    def addDrone(self, drone):
+    def add_drone(self, drone):
         # This function is used to add a drone to the swarm.
         self.swarm.append(drone.get_drone_data())
         print("Drone: {0}".format(drone.get_drone_data()))
 
-    def removeDrone(self, droneID):
+    def remove_drone(self, droneID):
         found = False
         for idx, drone in enumerate(self.swarm):
             if drone["id"] == droneID:
@@ -63,24 +69,24 @@ class Swarm:
         print("Swarm: {0}".format(json.dumps(self.swarm)))
         return found
 
-    def findDroneByID(self, droneID):
-        if self.droneIndex(droneID) >= 0:
-            return self.swarm[self.droneIndex(droneID)]
+    def find_drone_by_id(self, droneID):
+        if self.drone_index(droneID) >= 0:
+            return self.swarm[self.drone_index(droneID)]
         return "No Drone exists with ID of " + (str)(droneID)
 
-    def droneIndex(self, droneID):
+    def drone_index(self, droneID):
         for idx, drone in enumerate(self.swarm):
             if drone["id"] == droneID:
                 return idx
         return -1
 
-    def swarmSize(self):
+    def swarm_size(self):
         for idx in enumerate(self.swarm):
             pass
         return idx
 
-    def updateDroneInfo(self, newData):
-        indxDroneToUpdate = self.droneIndex(newData["id"])
+    def update_drone_Info(self, newData):
+        indxDroneToUpdate = self.drone_index(newData["id"])
         drone_info = {
             'id': newData.id,
             'ip': newData.ip,
@@ -95,12 +101,57 @@ class Swarm:
         self.swarm[indxDroneToUpdate] = json.loads(drone_info)
         print("Updated Drone: " + str(drone_info["id"]) + " with new data!")
 
-    def getSwarm(self):
+    def get_swarm(self):
         return self.swarm
 
-    def getDrone(self, droneID):
-        return json.loads(self.swarm[self.droneIndex(droneID)])
+    def get_drone(self, droneID):
+        return json.loads(self.swarm[self.drone_index(droneID)])
 
-    def listSwarm(self):
+    def list_swarm(self):
         for idx, drone in enumerate(self.swarm):
-            print(drone.toString())
+            print(drone.to_string())
+
+    def get_swarm_data(self, route):
+        url = self.webserver + route
+        try:
+            r = requests.get(url)
+            print("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
+            return Config(json.loads(r.text))
+        except requests.HTTPError:
+            print("HTTP " + str(requests.HTTPError))
+            return "NO_DATA"
+
+    def wait_for_swarm_ready(self):
+        swarm_ready_status = []
+
+        while not assert_true(swarm_ready_status):
+            swarm_params = self.get_swarm_data("/Swarm")
+            swarm_size = swarm_params.__len__()
+            print("Found " + (str)(swarm_size) + "Drones in the Swarm.")
+
+            for idx, drone in enumerate(swarm_params):
+                if swarm_params == "NO_DATA":
+                    print("No Drones Found in the Swarm.")
+                else:
+                    if not swarm_params.Drones:
+                        print("No Drones Found in the Swarm.")
+                    else:
+                        print("Drone: " + (str)(swarm_params.Drones[idx].id) + " found in swarm")
+                        time.sleep(1)
+
+            #if swarm_is_not_ready and all drones have been checked, do loop again
+        print("Swarm is ready!")
+
+def assert_true(obj):
+    if obj.__class__ is list:
+        if obj:
+            for idx in enumerate(obj):
+                if obj[idx] == True:
+                    continue
+                else:
+                    return False
+        else:
+            print("Empty List")
+            return False
+    else:
+        print("Object is not a list.")

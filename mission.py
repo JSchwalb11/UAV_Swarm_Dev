@@ -20,6 +20,8 @@ class Mission():
     def formation(self, formation):
         print("Flying in formation... " + formation)
     """
+
+
     def distance(self):
         earth_radius = 6378137.0
         print(str(self.vehicle.commands.next) + " test command.next value")

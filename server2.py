@@ -3,12 +3,11 @@
 # Desc: This script controls the server routing and handling of HTTP requests from the drones...
 # Creation Date: 12/~/2017
 #=============================================================================================================
-from flask import request, render_template, Flask
+from flask import Flask
 from droneData2 import Swarm
-from droneBrain2 import Drone
-#from delHandler import delHandler
-#from addHandler import addHandler
+import site
 from flask_restful import Resource, Api, abort, reqparse
+print(site.USER_SITE)
 import gevent.pywsgi
 
 
@@ -18,11 +17,10 @@ class Server():
     def __init__(self, swarm):
         self.swarm = swarm
 
-        self.app = Flask("abc")
-        self.app = self.app.register_blueprint
-        self.api = Api(self.app)
+        app = Flask(__name__)
+        self.api = Api(app)
 
-        self.api.add_resource(Swarm.getSwarm(self.swarm), '/Swarm')
+        self.api.add_resource(Swarm.get_swarm(self.swarm), '/Swarm')
         for idx, drone in enumerate(self.swarm):
             self.newDrone(drone)
 
@@ -32,7 +30,7 @@ class Server():
 
 
     def newDrone(self, drone):
-        self.api.add_resource(Swarm.getDrone(self.swarm, drone.id))
+        self.api.add_resource(Swarm.get_drone(self.swarm, drone.id))
         self.api.add_resource(drone.get_drone_data(), '/Swarm/' + str(drone.id))
 
 
