@@ -13,8 +13,7 @@ import json
 import time
 import requests
 from config import Config
-#from addHandler import addHandler
-#from delHandler import delHandler
+from dronekit import LocationGlobalRelative
 
 Drones = [
     {
@@ -48,7 +47,7 @@ class Swarm:
     # =======================================================================================================
     def __init__(self, config):
         self.swarm = []
-        self.webserver = config.size
+        self.ip = config.ip
         self.webport = config.webport
 
     # =============================MEMBER FUNCTIONS==========================================================
@@ -63,8 +62,8 @@ class Swarm:
         found = False
         for idx, drone in enumerate(self.swarm):
             if drone["id"] == droneID:
-                found = True
                 del self.swarm[idx]
+                found = True
 
         print("Swarm: {0}".format(json.dumps(self.swarm)))
         return found
@@ -112,44 +111,236 @@ class Swarm:
             print(drone.to_string())
 
     def get_swarm_data(self, route):
-        url = self.webserver + route
+        url = "http://" + self.ip + ":" + str(self.webport) + route
         try:
             r = requests.get(url)
+            json_data = json.loads(r.text)
+            parsed_data = Config(json_data)
             print("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
-            return Config(json.loads(r.text))
+            return parsed_data
         except requests.HTTPError:
             print("HTTP " + str(requests.HTTPError))
             return "NO_DATA"
 
     def wait_for_swarm_ready(self):
+        # drone_data.Drones[drone_id][1 (indexing bug)].get("ip")
         swarm_ready_status = []
 
         while not assert_true(swarm_ready_status):
             swarm_params = self.get_swarm_data("/Swarm")
-            swarm_size = swarm_params.__len__()
+            swarm_size = swarm_params.Drones.__len__()
             print("Found " + (str)(swarm_size) + "Drones in the Swarm.")
 
-            for idx, drone in enumerate(swarm_params):
-                if swarm_params == "NO_DATA":
+            for idx, drone in enumerate(swarm_params.Drones):
+                if not swarm_params:
                     print("No Drones Found in the Swarm.")
                 else:
-                    if not swarm_params.Drones:
+                    if not swarm_params.Drones[idx][1]:
                         print("No Drones Found in the Swarm.")
                     else:
-                        print("Drone: " + (str)(swarm_params.Drones[idx].id) + " found in swarm")
+                        print("Drone: " + (str)(swarm_params.Drones[idx][1].get("id") + " found in swarm"))
+                        swarm_ready_status.append(1)
                         time.sleep(1)
-
-            #if swarm_is_not_ready and all drones have been checked, do loop again
+            assert_true(swarm_ready_status)
+        #if swarm_is_not_ready and all drones have been checked, do loop again
         print("Swarm is ready!")
+
+    def goto_formation(self, formation, formationAltitude, bool):
+        # Formation on X,Y axes
+
+        swarm_data = self.get_swarm_data("/Swarm")
+        #Form up on first drone in swarm for now
+        head_drone_data = swarm_data.Drones[0][1]
+        head_drone_loc = LocationGlobalRelative(head_drone_data.get("latitude"),head_drone_data.get("longitude"),head_drone_data.get("altitude"))
+
+        """
+        Transition into formation so they don't crash
+        Safe altitude is different for some drones so they don't maneuver into position at the same altitude
+
+        3 Steps:
+            1. Move to a safe altitude to manuver in
+            2. Move to the position inside the formation it should be in
+            3. Move to the correct altitude inside the formation
+
+        Formation occurs on drone object (ID:1).
+        ID:1 should only change its altitude.
+        
+        """
+
+        if formation == "triangle":
+            for idx, drone in enumerate(swarm_data.Drones):
+                if drone.id == 1:
+                    self.swarm[drone.id-1].simple_goto(head_drone_loc.lat,head_drone_loc.lon,formationAltitude)
+
+                elif drone.id == 2:
+
+                    #Maneuver 5 metres below formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude - 5
+                    self.swarm[drone.id-1].simple_goto(drone.location.global_frame.lat,drone.location.global_frame.lon,safeAltitude)
+                    self.swarm[drone.id-1].simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon - .0000027, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon - .0000027, formationAltitude)
+
+                elif drone.id == 3:
+
+                    #Maneuver 5 metres above formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude + 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon - .0000027, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon - .0000027, formationAltitude)
+
+        elif formation == "stacked":
+            # Special formation altitude represents the separation on the Z axis between the drones
+            special_formation_altitude = 3
+
+            for idx, drone in enumerate(swarm_data.Drones):
+                if drone.id == 1:
+
+                    #Maneuver to formation altitude
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat,head_drone_loc.lon,formationAltitude)
+
+                elif drone.id == 2:
+
+                    #Maneuver 5 metres below formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude - 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude - special_formation_altitude)
+
+                elif drone.id == 3:
+
+                    # Maneuver 5 metres above formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude + 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude + special_formation_altitude)
+
+        elif formation == "xaxis":
+            for idx, drone in enumerate(swarm_data.Drones):
+                if drone.id == 1:
+
+                    # Maneuver to formation altitude
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude)
+
+                elif drone.id == 2:
+
+                    # Maneuver 5 metres below formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude - 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon, formationAltitude)
+
+                elif drone.id == 3:
+
+                    # Maneuver 5 metres above formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude + 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon, formationAltitude)
+
+        elif formation == "yaxis":
+            for idx, drone in enumerate(swarm_data.Drones):
+                if drone.id == 1:
+
+                    # Maneuver to formation altitude
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude)
+
+                elif drone.id == 2:
+
+                    # Maneuver 5 metres below formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude - 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon - .0000027, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon - .0000027, formationAltitude)
+
+                elif drone.id == 3:
+
+                    # Maneuver 5 metres above formation altitude
+                    if bool:
+                        safeAltitude = formationAltitude
+                    elif not bool:
+                        safeAltitude = formationAltitude + 5
+                    self.swarm[drone.id - 1].simple_goto(drone.location.global_frame.lat, drone.location.global_frame.lon, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027, safeAltitude)
+                    self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027, formationAltitude)
+
+    """
+    def move_to_formation(self, aTargetAltitude):
+        drone_params = self.get_drone_data()
+        droneLat = float(drone_params)  # would be better to just get the location object...
+        droneLon = float(drone_params['longitude'])
+        droneAlt = float(drone_params['altitude'])
+
+        # Check altitude is 10 metres so we can manuver around eachother
+
+        if aTargetAltitude is 10:
+
+            if (self.formation == "triangle"):
+
+                if (self.id == "1"):
+                    # Master, so take point
+                    self.vehicle.simple_goto(self.vehicle.location.global_frame.lat,
+                                             self.vehicle.location.global_frame.lon, aTargetAltitude)
+
+                elif (self.id == "2"):
+                    # Slave 1, so take back-left
+                    # print("Drone 2 Moving To Position")
+                    self.vehicle.simple_goto(droneLat - .0000018, droneLon - .0000018, aTargetAltitude - 3)
+                    # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
+                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                        self.vehicle.location.global_relative_frame.lon) + "," + str(
+                        self.vehicle.location.global_relative_frame.alt))
+
+                elif (self.id == "3"):
+                    # Slave 2, so take back-right
+                    # print("Drone 3 Moving To Position")
+                    self.vehicle.simple_goto(droneLat - .0000018, droneLon + .0000018, aTargetAltitude + 3)
+
+                    # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
+                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                        self.vehicle.location.global_relative_frame.lon) + "," + str(
+                        self.vehicle.location.global_relative_frame.alt))
+
+                else:
+                    self.logger.info("Cannot Position This Drone In Formation")
+            # Add more else if for more formation types
+            else:
+                self.logger.info("No such formation: " + self.formation)
+
+        else:
+            print("Invalid formation altitude!")
+            print("Please change formation altitude to 10 metres so the drones can manuver around eachother safetly!")
+    """
 
 def assert_true(obj):
     if obj.__class__ is list:
         if obj:
-            for idx in enumerate(obj):
-                if obj[idx] == True:
+            for idx in range(0,obj.__len__()):
+                if obj[idx] == 1:
                     continue
                 else:
                     return False
+            return True
         else:
             print("Empty List")
             return False

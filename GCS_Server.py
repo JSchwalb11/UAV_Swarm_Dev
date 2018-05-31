@@ -134,26 +134,26 @@ class DroneList(Resource):
              }
 
         #Swarm.get('Swarm').update(swarm_config)
-        Swarm.get('Drones').append(object_config)
+        Swarm.get('Drones').update(object_config)
         return
 
     def put(self):
         args = parser.parse_args()
-        object_config = {
-            "id": args.get("id"),
-            "ip": args.get("ip"),
-            "airspeed": args.get("airspeed"),
-            "latitude": args.get("latitude"),
-            "longitude": args.get("longitude"),
-            "altitude": args.get("altitude"),
-            "armable": args.get("armable"),
-            "armed": args.get("armed"),
-            "mode": args.get("mode")
-             }
+        #fix this dictionary
+        object_config = str(args.get("id")), {
+                                                "id": args.get("id"),
+                                                "ip": args.get("ip"),
+                                                "airspeed": args.get("airspeed"),
+                                                "latitude": args.get("latitude"),
+                                                "longitude": args.get("longitude"),
+                                                "altitude": args.get("altitude"),
+                                                "armable": args.get("armable"),
+                                                "armed": args.get("armed"),
+                                                "mode": args.get("mode")
+                                              }
 
         #Swarm.get('Swarm').update(swarm_config)
         Swarm.get('Drones').append(object_config)
-        return 270
 
 
 	   
