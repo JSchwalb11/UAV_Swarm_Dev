@@ -474,12 +474,12 @@ class Drone:
 
     def wait_for_next_formation(self, seconds):
         for idx in range(0, seconds):
-            print("Waiting " + str(seconds) + " seconds before next flight formation... " + str(idx) + "/" + str(seconds))
+            self.logger.info("Waiting " + str(seconds) + " seconds before next flight formation... " + str(idx) + "/" + str(seconds))
             time.sleep(1)
 
     def wait_for_formation(self, seconds):
         for idx in range(0, seconds):
-            print("Waiting for drones to form up... " + str(idx) + "/" + str(seconds))
+            self.logger.info("Waiting for drones to form up... " + str(idx) + "/" + str(seconds))
             time.sleep(1)
 
     """def arm_and_takeoff(self, aTargetAltitude):
