@@ -4,12 +4,12 @@ import logging
 
 from config import Config
 from mission import Mission
-from dronekit import connect, VehicleMode, LocationGlobalRelative
+from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
 import site
+
 print(site.USER_SITE)
 from dronekit_sitl import SITL
 from droneData2 import assert_true
-
 
 import requests
 import time
@@ -28,23 +28,24 @@ class Drone:
         # Follow instructions @ https://github.com/abearman/sparrow-dev/wiki/How-to-use-the-DroneKit-SITL-simulator
         self.instance = self.id - 1
         self.sitlInstance = SITL(instance=self.instance)
-        self.sitlInstance.download('copter', '3.2.1',
-                                   verbose=True)  # system (e.g. "copter", "solo"), version (e.g. "3.3"), verbose
+        self.sitlInstance.download('copter', '3.3', verbose=True)
+            # system (e.g. "copter", "solo"), version (e.g. "3.3"), verbose
 
         if self.sitl:
-            sitl_args = ['-I' + str(self.id - 1), '--simin=127.0.0.1:4000', '--simout=127.0.0.1:4001', '--model',
-                         'quad', '--home=' + str(self.home_location.lat) + "," + str(self.home_location.lon) + "," + str(self.home_location.alt) + ",360"]
+            sitl_args = ['--simin=127.0.0.1:4000', '--simout=127.0.0.1:4001', '--model',
+                         'quad',
+                         '--home=' + str(self.home_location.lat) + "," + str(self.home_location.lon) + "," + str(
+                             self.home_location.alt) + ",360"]
             print(str(sitl_args))
             self.sitlInstance.launch(sitl_args, verbose=False, await_ready=False, restart=True)
             self.connection_string = self.sitlInstance.connection_string()
         else:
             self.connection_string = '/dev/tty/ACM0'
 
-        print("Connection_string: " + self.connection_string)
         self.formation = None
         self.webserver = str(self.ip) + ":" + str(self.default_webserver_port)
         print('\nConnecting to vehicle on: %s\n' % self.connection_string)
-        print(site.USER_SITE)
+        #print(site.USER_SITE)
         self.vehicle = connect(self.connection_string)
         print("Drone: " + str(self.id) + " connected!")
         self.drone_data = self.get_drone_data()
@@ -52,9 +53,9 @@ class Drone:
         # self.print_drone_data()
         self.mission = Mission(self.vehicle)
         # logger config
-        self.logger = logging.getLogger("/logs/drone" + (str)(self.id) + "_log")
+        self.logger = logging.getLogger("/logs/drone" + str(self.id) + "_log")
         self.logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler("drone" + (str)(self.id) + "_log")
+        fh = logging.FileHandler("drone" + str(self.id) + "_log")
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
@@ -70,7 +71,7 @@ class Drone:
     def location_callback(self):
         self.update_self_to_swarm("/Swarm")
         self.logger.info("Drone Location Changed: " + str(self.vehicle.location.global_relative_frame))
-        if (self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED"):  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
+        if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
             self.vehicle.airspeed = .2
 
     def armed_callback(self):
@@ -85,10 +86,8 @@ class Drone:
     # =======================================================================================================
 
     def update_self_to_swarm(self, route):
-        # url = 'http://' + self.webserver + route
         url = 'http://' + self.webserver + route + "?id=" + str(self.id)  # + "/" + str(self.id) + "?id=" + str(self.id)
         data = self.get_drone_data().__dict__[(str(self.id))]
-        # print("Data to server: " + data)
         try:
             # r = requests.post(url,data)
             r = requests.put(url, json=data)
@@ -150,8 +149,6 @@ class Drone:
 
     def set_formation(self, formationName):
         self.formation = formationName
-
-
 
     def move_to_formation(self, aTargetAltitude):
         drone_params = self.get_drone_data()
@@ -278,14 +275,15 @@ class Drone:
     def wait_for_drone_reach_altitude(self, droneID, altitude):
         swarm_params = self.get_data_from_server("/Swarm")
 
-        for idx in enumerate(swarm_params.Drones[0]):
+        for idx, drone in enumerate(swarm_params.Drones[0]):
             if swarm_params.Drones[idx][1].get("id") == droneID:
                 while (swarm_params.Drones[idx][1].altitude <= altitude * 0.95):
                     swarm_params = self.get_data_from_server("/Swarm")
                     print("Waiting for Drone: " + str(swarm_params.Drones[idx][1].get("id")) + " to reach " + str(
                         altitude))
                     time.sleep(1)
-                self.logger.info("Drone: " + swarm_params.Drones[idx][1].get("id") + " reached " + str(altitude) + "...")
+                self.logger.info(
+                    "Drone: " + swarm_params.Drones[idx][1].get("id") + " reached " + str(altitude) + "...")
 
     def wait_for_swarm_ready(self):
         # drone_data.Drones[drone_id][1 (indexing bug)].get("ip")
@@ -307,13 +305,13 @@ class Drone:
                         swarm_ready_status.append(1)
                         time.sleep(1)
             assert_true(swarm_ready_status)
-        #if swarm_is_not_ready and all drones have been checked, do loop again
+        # if swarm_is_not_ready and all drones have been checked, do loop again
         print("Swarm is ready!")
 
     def goto_formation(self, formation, formationAltitude, bool):
         # Formation on X,Y axes
 
-        swarm_data = self.get_swarm_data("/Swarm")
+        swarm_data = self.get_data_from_server("/Swarm")
         # Form up on first drone in swarm for now
         head_drone_data = swarm_data.Drones[0][1]
         head_drone_loc = LocationGlobalRelative(head_drone_data.get("latitude"), head_drone_data.get("longitude"),
@@ -336,7 +334,8 @@ class Drone:
         if formation == "triangle":
             for idx, drone in enumerate(swarm_data.Drones):
                 if self.id == 1:
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude)
+                    waypoint = LocationGlobalRelative(head_drone_loc.lat, head_drone_loc.lon,formationAltitude)
+                    self.vehicle.simple_goto(waypoint)
 
                 elif self.id == 2:
 
@@ -346,11 +345,11 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude - 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon - .0000027,
-                                                         safeAltitude)
+                                             safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon - .0000027,
-                                                         formationAltitude)
+                                             formationAltitude)
 
                 elif self.id == 3:
 
@@ -360,11 +359,11 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude + 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon - .0000027,
-                                                         safeAltitude)
+                                             safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon - .0000027,
-                                                         formationAltitude)
+                                             formationAltitude)
 
         elif formation == "stacked":
             # Special formation altitude represents the separation on the Z axis between the drones
@@ -384,10 +383,10 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude - 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon,
-                                                         formationAltitude - special_formation_altitude)
+                                             formationAltitude - special_formation_altitude)
 
                 elif self.id == 3:
 
@@ -397,10 +396,10 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude + 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon,
-                                                         formationAltitude + special_formation_altitude)
+                                             formationAltitude + special_formation_altitude)
 
         elif formation == "xaxis":
             for idx, drone in enumerate(swarm_data.Drones):
@@ -417,11 +416,11 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude - 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon,
-                                                         safeAltitude)
+                                             safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon,
-                                                         formationAltitude)
+                                             formationAltitude)
 
                 elif self.id == 3:
 
@@ -431,11 +430,11 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude + 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon,
-                                                         safeAltitude)
+                                             safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon,
-                                                         formationAltitude)
+                                             formationAltitude)
 
         elif formation == "yaxis":
             for idx, drone in enumerate(swarm_data.Drones):
@@ -452,11 +451,11 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude - 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon - .0000027,
-                                                         safeAltitude)
+                                             safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon - .0000027,
-                                                         formationAltitude)
+                                             formationAltitude)
 
                 elif self.id == 3:
 
@@ -466,20 +465,21 @@ class Drone:
                     elif not bool:
                         safeAltitude = formationAltitude + 5
                     self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                                         drone.location.global_frame.lon, safeAltitude)
+                                             drone.location.global_frame.lon, safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027,
-                                                         safeAltitude)
+                                             safeAltitude)
                     self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027,
-                                                         formationAltitude)
+                                             formationAltitude)
 
     def wait_for_next_formation(self, seconds):
         for idx in range(0, seconds):
-            self.logger.info("Waiting " + str(seconds) + " seconds before next flight formation... " + str(idx) + "/" + str(seconds))
+            self.logger.info(
+                "Waiting " + str(seconds) + " seconds before next flight formation... " + str(idx+1) + "/" + str(seconds))
             time.sleep(1)
 
     def wait_for_formation(self, seconds):
         for idx in range(0, seconds):
-            self.logger.info("Waiting for drones to form up... " + str(idx) + "/" + str(seconds))
+            self.logger.info("Waiting for drones to form up... " + str(idx+1) + "/" + str(seconds))
             time.sleep(1)
 
     """def arm_and_takeoff(self, aTargetAltitude):
@@ -495,42 +495,46 @@ class Drone:
                 self.update_self_to_swarm("/Swarm")
                 break
             time.sleep(.75)
-"""
+    """
 
     def arm_and_takeoff(self, aTargetAltitude):
-        """
-        Arms vehicle and fly to aTargetAltitude.
-        """
+        
+        #Arms vehicle and fly to aTargetAltitude.
 
-        print("Basic pre-arm checks")
+        self.logger.info("Basic pre-arm checks")
         # Don't try to arm until autopilot is ready
         while not self.vehicle.is_armable:
-            print(" Waiting for vehicle to initialize...")
-            #self.vehicle.gps_0.fix_type.__add__(2)
-            #self.vehicle.gps_0.__setattr__(self.vehicle.gps_0.fix_type, 3)
-            print(self.vehicle.gps_0.fix_type)
-            print(self.vehicle.gps_0.satellites_visible)
+            self.logger.info(" Waiting for vehicle to initialize...")
+            # self.vehicle.gps_0.fix_type.__add__(2)
+            # self.vehicle.gps_0.__setattr__(self.vehicle.gps_0.fix_type, 3)
+            self.logger.info(self.vehicle.gps_0.fix_type)
+            self.logger.info(self.vehicle.gps_0.satellites_visible)
             time.sleep(2)
 
-        print("Arming motors")
+            self.logger.info("Arming motors")
+
+        self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
+        self.vehicle.add_attribute_listener('armed', self.armed_callback)
+        self.vehicle.add_attribute_listener('mode', self.mode_callback)
+
         # Copter should arm in GUIDED mode
         self.vehicle.mode = VehicleMode("GUIDED")
         self.vehicle.armed = True
 
         # Confirm vehicle armed before attempting to take off
         while not self.vehicle.armed:
-            print(" Waiting for arming...")
+            self.logger.info(" Waiting for arming...")
             time.sleep(1)
 
-        print("Taking off!")
+            self.logger.info("Taking off!")
         self.vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
         while self.vehicle.location.global_relative_frame.alt < aTargetAltitude * 0.95:
-            print(" Currently flying... Alt: ", self.vehicle.location.global_relative_frame.alt)
+            self.logger.info(" Currently flying... Alt: " + str(self.vehicle.location.global_relative_frame.alt))
             time.sleep(1)
 
         if self.vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
-            print("Reached target altitude")
+            self.logger.info("Reached target altitude")
 
     def land_vehicle(self):
         self.logger.info("Returning to Launch!!!")
@@ -552,6 +556,15 @@ class Drone:
             time.sleep(1)
         self.logger.info("Landed!")
 
+    def over_fix(self, lat, lon):
+        #Negate to make sense in english
+        #Should be True,False,False
+        loc = LocationGlobal(lat, lon)
+        if (self.vehicle.location.global_frame.lat - loc.lat) < 0.000005:
+            if (self.vehicle.location.global_frame.lon - loc.lon) < 0.000005:
+                return False
+            return True
+        return True
 
 def toJson(value):
     return {value.__name__() + ":" + value}

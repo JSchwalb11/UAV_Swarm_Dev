@@ -101,7 +101,10 @@ if ipArgsExists():
     default_ip = args.ip
 
 
-
+formationList = ["triangle", "xaxis", "yaxis", "stacked"]
+formationAlt = 15
+waypoints = {"lat1": 47.9190654, "lon1": -97.0647079, "lat2": 47.9188605, "lon2": -97.0647106, "lat3": 47.9188623,
+             "lon3": -97.0641875, "lat4": 47.9190798, "lon4": -97.0641875}
 
 """
 Initialize drones in the swarm
@@ -111,13 +114,50 @@ swarm = Swarm(swarm_config.Swarm)
 for idx, drone_cfg in enumerate(swarm_config.Drones):
     drone = Drone(drone_cfg)
     drone.update_self_to_swarm('/Swarm')
-    drone.arm_and_takeoff(15)
     swarm.add_drone(drone)
 
 swarm.list_swarm()
 swarm.wait_for_swarm_ready()
-swarm.goto_formation("triangle", 15, False)
+swarm.launch_swarm(15)
 
+# Cycle through formations and waypoints
+# Move to a different formation each lap
+for idx in range(0, 3):
+    for idx2, drone in enumerate(swarm.swarm):
+        drone.goto_formation(formationList[idx2], formationAlt, False)
+        drone.wait_for_formation(30)
+
+    if drone.id == 1:
+        drone.vehicle.simple_goto(waypoints.get("lat" + str(idx)), waypoints.get("lon" + str(idx)), formationAlt)
+    else:
+        while drone.over_fix(waypoints.get("lat" + str(idx)), waypoints.get("lon" + str(idx))):
+            drone.goto_formation(formationList[idx], formationAlt, True)
+    drone.wait_for_next_formation(30)
+
+
+drone.land_vehicle()
+drone.shutdown()
+
+formationList = ["triangle", "xaxis", "yaxis", "stacked"]
+waypoints = {"lat1": 47.9190654, "lon1": -97.0647079, "lat2": 47.9188605, "lon2": -97.0647106, "lat3": 47.9188623,
+             "lon3": -97.0641875, "lat4": 47.9190798, "lon4": -97.0641875}
+formationAlt = 15
+drone.wait_for_swarm_ready()
+
+for idx, drone in enumerate(swarm.swarm):
+    drone.arm_and_takeoff(15)
+    drone.wait_for_swarm_to_match_altitude()
+
+
+
+
+# Cycle through formations and waypoints
+# Move to a different formation each lap
+
+
+drone.land_vehicle()
+drone.shutdown()
+"""
 for idx in range (0,30):
     print("Waiting for drones to form up... " + str(idx) + "/30")
     time.sleep(1)
@@ -128,7 +168,7 @@ swarm.goto_formation("triangle", 15, True)
 print(swarm.get("Drones").__len__())
 print("Finished!")
 
-
+"""
 """
 if (sitl):
     import dronekit_sitl

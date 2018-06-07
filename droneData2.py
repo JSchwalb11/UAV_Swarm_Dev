@@ -15,6 +15,7 @@ import requests
 from config import Config
 from dronekit import LocationGlobalRelative
 
+
 Drones = [
     {
         "id": '1',
@@ -55,7 +56,7 @@ class Swarm:
 
     def add_drone(self, drone):
         # This function is used to add a drone to the swarm.
-        self.swarm.append(drone.get_drone_data())
+        self.swarm.append(drone)
         print("Drone: {0}".format(drone.get_drone_data()))
 
     def remove_drone(self, droneID):
@@ -71,7 +72,7 @@ class Swarm:
     def find_drone_by_id(self, droneID):
         if self.drone_index(droneID) >= 0:
             return self.swarm[self.drone_index(droneID)]
-        return "No Drone exists with ID of " + (str)(droneID)
+        return "No Drone exists with ID of " + str(droneID)
 
     def drone_index(self, droneID):
         for idx, drone in enumerate(self.swarm):
@@ -80,9 +81,7 @@ class Swarm:
         return -1
 
     def swarm_size(self):
-        for idx in enumerate(self.swarm):
-            pass
-        return idx
+        return self.swarm.__len__()
 
     def update_drone_Info(self, newData):
         indxDroneToUpdate = self.drone_index(newData["id"])
@@ -108,7 +107,7 @@ class Swarm:
 
     def list_swarm(self):
         for idx, drone in enumerate(self.swarm):
-            print(drone.to_string())
+            print(drone.get_drone_data())
 
     def get_swarm_data(self, route):
         url = "http://" + self.ip + ":" + str(self.webport) + route
@@ -129,7 +128,7 @@ class Swarm:
         while not assert_true(swarm_ready_status):
             swarm_params = self.get_swarm_data("/Swarm")
             swarm_size = swarm_params.Drones.__len__()
-            print("Found " + (str)(swarm_size) + "Drones in the Swarm.")
+            print("Found " + str(swarm_size) + "Drones in the Swarm.")
 
             for idx, drone in enumerate(swarm_params.Drones):
                 if not swarm_params:
@@ -138,7 +137,7 @@ class Swarm:
                     if not swarm_params.Drones[idx][1]:
                         print("No Drones Found in the Swarm.")
                     else:
-                        print("Drone: " + (str)(swarm_params.Drones[idx][1].get("id") + " found in swarm"))
+                        print("Drone: " + str(swarm_params.Drones[idx][1].get("id") + " found in swarm"))
                         swarm_ready_status.append(1)
                         time.sleep(1)
             assert_true(swarm_ready_status)
@@ -284,53 +283,9 @@ class Swarm:
                     self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027, safeAltitude)
                     self.swarm[drone.id - 1].simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027, formationAltitude)
 
-    """
-    def move_to_formation(self, aTargetAltitude):
-        drone_params = self.get_drone_data()
-        droneLat = float(drone_params)  # would be better to just get the location object...
-        droneLon = float(drone_params['longitude'])
-        droneAlt = float(drone_params['altitude'])
-
-        # Check altitude is 10 metres so we can manuver around eachother
-
-        if aTargetAltitude is 10:
-
-            if (self.formation == "triangle"):
-
-                if (self.id == "1"):
-                    # Master, so take point
-                    self.vehicle.simple_goto(self.vehicle.location.global_frame.lat,
-                                             self.vehicle.location.global_frame.lon, aTargetAltitude)
-
-                elif (self.id == "2"):
-                    # Slave 1, so take back-left
-                    # print("Drone 2 Moving To Position")
-                    self.vehicle.simple_goto(droneLat - .0000018, droneLon - .0000018, aTargetAltitude - 3)
-                    # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
-                        self.vehicle.location.global_relative_frame.lon) + "," + str(
-                        self.vehicle.location.global_relative_frame.alt))
-
-                elif (self.id == "3"):
-                    # Slave 2, so take back-right
-                    # print("Drone 3 Moving To Position")
-                    self.vehicle.simple_goto(droneLat - .0000018, droneLon + .0000018, aTargetAltitude + 3)
-
-                    # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
-                        self.vehicle.location.global_relative_frame.lon) + "," + str(
-                        self.vehicle.location.global_relative_frame.alt))
-
-                else:
-                    self.logger.info("Cannot Position This Drone In Formation")
-            # Add more else if for more formation types
-            else:
-                self.logger.info("No such formation: " + self.formation)
-
-        else:
-            print("Invalid formation altitude!")
-            print("Please change formation altitude to 10 metres so the drones can manuver around eachother safetly!")
-    """
+    def launch_swarm(self, aTargetAltitude):
+        for idx, drone in enumerate(self.swarm):
+            drone.arm_and_takeoff(aTargetAltitude)
 
 def assert_true(obj):
     if obj.__class__ is list:
