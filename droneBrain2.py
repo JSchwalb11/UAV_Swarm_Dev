@@ -53,16 +53,22 @@ class Drone:
         # self.print_drone_data()
         self.mission = Mission(self.vehicle)
         # logger config
-        self.logger = logging.getLogger("/logs/drone" + str(self.id) + "_log")
+        self.logger = logging.getLogger("drone" + str(self.id) + "_log")
+        self.droneSimDataLog = logging.getLogger("dronesimdata_log")
         self.logger.setLevel(logging.DEBUG)
         fh = logging.FileHandler("drone" + str(self.id) + "_log")
+        fhSimLog = logging.FileHandler("dronesimdata " + str(self.id) + "_log")
         fh.setLevel(logging.DEBUG)
+        fhSimLog.setLevel(logging.INFO)
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatterSimLog = logging.Formatter('%(message)s')
         fh.setFormatter(formatter)
+        fhSimLog.setFormatter(formatterSimLog)
         self.logger.addHandler(fh)
         self.logger.addHandler(ch)
+        self.droneSimDataLog.addHandler(fhSimLog)
 
         # Always add the drone to swarm last.
 
@@ -71,15 +77,18 @@ class Drone:
     def location_callback(self):
         self.update_self_to_swarm("/Swarm")
         self.logger.info("Drone Location Changed: " + str(self.vehicle.location.global_relative_frame))
+        self.droneSimDataLog.info(self.get_drone_data())
         if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
             self.vehicle.airspeed = .2
 
     def armed_callback(self):
         self.logger.info("Drone Armed Status Changed: " + str(self.vehicle.armed))
+        self.droneSimDataLog.info(self.get_drone_data())
         self.update_self_to_swarm("/Swarm")
 
     def mode_callback(self):
         self.logger.info("Mode Changed: " + str(self.vehicle.mode.name))
+        self.droneSimDataLog.info(self.get_drone_data())
         self.update_self_to_swarm("/Swarm")
 
     # =============================COMMUNICATION TO SERVER===================================================
@@ -513,7 +522,7 @@ class Drone:
 
             self.logger.info("Arming motors")
 
-        self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
+        self.vehicle.add_attribute_listener('global_relative_frame', self.location_callback)
         self.vehicle.add_attribute_listener('armed', self.armed_callback)
         self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
