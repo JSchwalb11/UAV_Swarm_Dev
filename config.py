@@ -14,5 +14,8 @@ class Config:
                 dct[key] = [Config(i) if type(i) is dict else i for i in dct[key]]
         self.__dict__.update(dct)
 
+    def __len__(self):
+        return self.__dict__.__len__()
+
 def load_json_config(filename):
     return Config(json.load(open(filename, 'r')))

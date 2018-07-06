@@ -14,7 +14,8 @@ import time
 import requests
 from config import Config
 from dronekit import LocationGlobalRelative
-
+from dashboard import Dashboard
+from Tkinter import tkinter, Tk
 
 Drones = [
     {
@@ -50,6 +51,7 @@ class Swarm:
         self.swarm = []
         self.ip = config.ip
         self.webport = config.webport
+        #self.dashboard = Dashboard(550, 550)
 
     # =============================MEMBER FUNCTIONS==========================================================
     # =======================================================================================================
@@ -134,16 +136,39 @@ class Swarm:
                 if not swarm_params:
                     print("No Drones Found in the Swarm.")
                 else:
-                    if not swarm_params.Drones[idx][1]:
+                    if not swarm_params.Drones[idx]:
                         print("No Drones Found in the Swarm.")
                     else:
-                        print("Drone: " + str(swarm_params.Drones[idx][1].get("id") + " found in swarm"))
+                        print("Drone: " + str(swarm_params.Drones[idx].id + " found in swarm"))
                         swarm_ready_status.append(1)
                         time.sleep(1)
             assert_true(swarm_ready_status)
-        #if swarm_is_not_ready and all drones have been checked, do loop again
+            # if swarm_is_not_ready and all drones have been checked, do loop again
         print("Swarm is ready!")
 
+        """ 
+        # drone_data.Drones[drone_id][1 (indexing bug)].get("ip")
+        swarm_ready_status = []
+
+        while not assert_true(swarm_ready_status):
+            swarm_params = self.get_swarm_data("/Swarm")
+            swarm_size = swarm_params.Drones.__len__()
+            print("Found " + str(swarm_size) + "Drones in the Swarm.")
+
+            if swarm_size >= 1:
+                for idx in range(0, swarm_params.Drones.__len__()):
+                    #idx is zero based, but our drone id's aren't. We take index out of zero base. (idx+1)
+                    base1idx = idx+1
+                    print("Drone: " + str(swarm_params.Drones.base1idx.get("id")) + " found in swarm")
+                    swarm_ready_status.append(1)
+                    time.sleep(1)
+                assert_true(swarm_ready_status)
+                #if swarm_is_not_ready and all drones have been checked, do loop again
+                print("Swarm is ready!")
+
+            else:
+                print("Swarm is too small! (Size: " + str(swarm_size) + ")")
+        """
     def goto_formation(self, formation, formationAltitude, bool):
         # Formation on X,Y axes
 
@@ -286,6 +311,7 @@ class Swarm:
     def launch_swarm(self, aTargetAltitude):
         for idx, drone in enumerate(self.swarm):
             drone.arm_and_takeoff(aTargetAltitude)
+
 
 def assert_true(obj):
     if obj.__class__ is list:

@@ -57,7 +57,7 @@ class Drone:
         self.droneSimDataLog = logging.getLogger("dronesimdata_log")
         self.logger.setLevel(logging.DEBUG)
         fh = logging.FileHandler("drone" + str(self.id) + "_log")
-        fhSimLog = logging.FileHandler("dronesimdata " + str(self.id) + "_log")
+        fhSimLog = logging.FileHandler("dronesimdata" + str(self.id) + "_log")
         fh.setLevel(logging.DEBUG)
         fhSimLog.setLevel(logging.INFO)
         ch = logging.StreamHandler()
@@ -72,23 +72,35 @@ class Drone:
 
         # Always add the drone to swarm last.
 
+
     # =============================ATTRIBUTE LISTENER CALLBACKS==============================================
     # =======================================================================================================
-    def location_callback(self):
+    #def location_callback(self, attr_name, value):
+    #   print("Location (Relative): ", value)
+        # Add a callback `location_callback` for the `global_frame` attribute.
+        #self.update_self_to_swarm("/Swarm")
+        #self.logger.info("Drone Location Changed: " + str(self.vehicle.location.global_relative_frame))
+        #self.droneSimDataLog.info("test1")
+        #if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
+        #    self.vehicle.airspeed = .2
+        #self.logger.info("Location (Global) " + msg)
+
+    def location_callback(self, vehicle, attr_name, value):
+        self.logger.info("%s : %s", attr_name, value)
+        self.droneSimDataLog.info("%s : %s", attr_name, value)
         self.update_self_to_swarm("/Swarm")
-        self.logger.info("Drone Location Changed: " + str(self.vehicle.location.global_relative_frame))
-        self.droneSimDataLog.info(self.get_drone_data())
         if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
-            self.vehicle.airspeed = .2
+           self.vehicle.airspeed = .2
+
 
     def armed_callback(self):
         self.logger.info("Drone Armed Status Changed: " + str(self.vehicle.armed))
-        self.droneSimDataLog.info(self.get_drone_data())
+        self.droneSimDataLog.info(str(self.get_drone_data()))
         self.update_self_to_swarm("/Swarm")
 
     def mode_callback(self):
         self.logger.info("Mode Changed: " + str(self.vehicle.mode.name))
-        self.droneSimDataLog.info(self.get_drone_data())
+        self.droneSimDataLog.info(str(self.get_drone_data())    )
         self.update_self_to_swarm("/Swarm")
 
     # =============================COMMUNICATION TO SERVER===================================================
@@ -229,8 +241,8 @@ class Drone:
             time.sleep(1)
 
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
-        self.vehicle.add_attribute_listener('armed', self.armed_callback)
-        self.vehicle.add_attribute_listener('mode', self.mode_callback)
+        #self.vehicle.add_attribute_listener('armed', self.armed_callback)
+        #self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
         self.logger.info("Vehicle Armed!")
 
@@ -264,9 +276,9 @@ class Drone:
         self.update_self_to_swarm("/swarm")
 
     def shutdown(self):
-        self.vehicle.remove_attribute_listener('location.global_relative_frame', self.location_callback)
-        self.vehicle.remove_attribute_listener('armed', self.armed_callback)
-        self.vehicle.remove_attribute_listener('mode', self.mode_callback)
+        self.vehicle.remove_attribute_listener('location.global_relative_frame', self.location_callback())
+        self.vehicle.remove_attribute_listener('armed', self.armed_callback())
+        self.vehicle.remove_attribute_listener('mode', self.mode_callback())
         self.vehicle.close()
 
     # =================================MISSION FUNCTIONS=====================================================
@@ -516,13 +528,14 @@ class Drone:
             self.logger.info(" Waiting for vehicle to initialize...")
             # self.vehicle.gps_0.fix_type.__add__(2)
             # self.vehicle.gps_0.__setattr__(self.vehicle.gps_0.fix_type, 3)
-            self.logger.info(self.vehicle.gps_0.fix_type)
-            self.logger.info(self.vehicle.gps_0.satellites_visible)
+            self.logger.info("Fix type (1-3): " + str(self.vehicle.gps_0.fix_type))
+            self.logger.info("Satellites Visible: " + str(self.vehicle.gps_0.satellites_visible))
             time.sleep(2)
 
             self.logger.info("Arming motors")
 
-        self.vehicle.add_attribute_listener('global_relative_frame', self.location_callback)
+
+        self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
         self.vehicle.add_attribute_listener('armed', self.armed_callback)
         self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
@@ -535,7 +548,7 @@ class Drone:
             self.logger.info(" Waiting for arming...")
             time.sleep(1)
 
-            self.logger.info("Taking off!")
+        self.logger.info("Taking off! " + "(" + str(aTargetAltitude) + ")")
         self.vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
         while self.vehicle.location.global_relative_frame.alt < aTargetAltitude * 0.95:
@@ -577,3 +590,5 @@ class Drone:
 
 def toJson(value):
     return {value.__name__() + ":" + value}
+
+

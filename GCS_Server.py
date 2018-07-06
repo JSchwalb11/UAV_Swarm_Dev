@@ -54,6 +54,18 @@ def abort_if_todo_doesnt_exist(drone_id):
             return idx
     abort(404, message="Drone {} doesn't exist".format(drone_id))
 
+def exists(droneid):
+    for idx, drone in enumerate(Swarm.get("Drones")):
+        if Swarm.get("Drones")[idx].get("id") == droneid:
+            return True
+    return False
+
+def index_of(id):
+    for idx, drone in enumerate(Swarm.get("Drones")):
+       if drone.get("id") == id:
+           return idx
+
+
 
 parser = reqparse.RequestParser()
 parser.add_argument("id")
@@ -140,20 +152,43 @@ class DroneList(Resource):
     def put(self):
         args = parser.parse_args()
         #fix this dictionary
-        object_config = str(args.get("id")), {
-                                                "id": args.get("id"),
-                                                "ip": args.get("ip"),
-                                                "airspeed": args.get("airspeed"),
-                                                "latitude": args.get("latitude"),
-                                                "longitude": args.get("longitude"),
-                                                "altitude": args.get("altitude"),
-                                                "armable": args.get("armable"),
-                                                "armed": args.get("armed"),
-                                                "mode": args.get("mode")
-                                              }
+        object_config = {
+                            "id": args.get("id"),
+                            "ip": args.get("ip"),
+                            "airspeed": args.get("airspeed"),
+                            "latitude": args.get("latitude"),
+                            "longitude": args.get("longitude"),
+                            "altitude": args.get("altitude"),
+                            "armable": args.get("armable"),
+                            "armed": args.get("armed"),
+                            "mode": args.get("mode")
+                        }
 
         #Swarm.get('Swarm').update(swarm_config)
-        Swarm.get('Drones').append(object_config)
+        ID_to_check = object_config.get("id")
+        if exists(ID_to_check):
+            idx = index_of(ID_to_check)
+            Swarm.get("Drones")[idx] = object_config
+        else:
+            Swarm.get('Drones').append(object_config)
+        """
+        [x for x in c.Drones if x.id == '15']
+        
+        list = []
+        for x in c.Drones:
+            if x.id == '15'
+                list.append(x)
+        return list
+        
+        Option1:
+            Head of the list == swarm leader c.Drones[0]
+        Option2:
+            [x for x in c.Drones if x.head]
+        Option3:
+            Use the Id's as keys c.Drones["someidhere"]
+            [x for x in c.Drones.values if x.id == '15']
+
+        """
 
 
 	   

@@ -1,0 +1,29 @@
+{
+      "Drones" : [
+                    {
+                          "id": 12,
+                          "ip": "192.168.1.2",
+                          "airspeed": "3",
+                          "latitude": "97.37574",
+                          "longitude": "68.38475",
+                          "altitude": "4.7",
+                          "armable": "1",
+                          "armed": "0",
+                          "mode": "GUIDED"
+                    },
+
+                    {
+                          "id": 15,
+                          "ip": "192.168.1.2",
+                          "airspeed": "3",
+                          "latitude": "97.37574",
+                          "longitude": "68.38475",
+                          "altitude": "4.7",
+                          "armable": "1",
+                          "armed": "0",
+                          "mode": "GUIDED"
+                    }
+            ]
+}
+
+
