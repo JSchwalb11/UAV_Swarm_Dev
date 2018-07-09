@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_restful import reqparse, abort, Api, Resource
 from config import Config
 
@@ -189,6 +189,9 @@ class DroneList(Resource):
             [x for x in c.Drones.values if x.id == '15']
 
         """
+@app.route('/test1/')
+def test1():
+    return render_template('test1.html')
 
 
 	   
@@ -197,4 +200,4 @@ api.add_resource(DroneList, '/Swarm')
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port= 5550)

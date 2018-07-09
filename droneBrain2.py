@@ -334,9 +334,9 @@ class Drone:
 
         swarm_data = self.get_data_from_server("/Swarm")
         # Form up on first drone in swarm for now
-        head_drone_data = swarm_data.Drones[0][1]
-        head_drone_loc = LocationGlobalRelative(head_drone_data.get("latitude"), head_drone_data.get("longitude"),
-                                                head_drone_data.get("altitude"))
+        head_drone_data = swarm_data.Drones[0]
+        head_drone_loc = LocationGlobalRelative(head_drone_data.latitude, head_drone_data.longitude,
+                                                head_drone_data.altitude)
 
         """
         Transition into formation so they don't crash
@@ -353,144 +353,200 @@ class Drone:
         """
 
         if formation == "triangle":
-            for idx, drone in enumerate(swarm_data.Drones):
-                if self.id == 1:
-                    waypoint = LocationGlobalRelative(head_drone_loc.lat, head_drone_loc.lon,formationAltitude)
-                    self.vehicle.simple_goto(waypoint)
+            if self.id == 1:
+                self.vehicle.simple_goto(LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude))
 
-                elif self.id == 2:
+            elif self.id == 2:
 
-                    # Maneuver 5 metres below formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude - 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon - .0000027,
-                                             safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon - .0000027,
-                                             formationAltitude)
+                # Maneuver 5 metres below formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude - 5
 
-                elif self.id == 3:
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon) - 0.0000027, safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon) - 0.0000027, formationAltitude)
 
-                    # Maneuver 5 metres above formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude + 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon - .0000027,
-                                             safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon - .0000027,
-                                             formationAltitude)
+                while not self.over_fix(waypoint1.lat,waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    #wait 10 seconds to get to safe altitude
+                    #time.sleep(10)
+                while not self.over_fix(waypoint2.lat,waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
+
+            elif self.id == 3:
+
+                # Maneuver 5 metres above formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude + 5
+
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon) - 0.0000027, safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon) - 0.0000027, formationAltitude)
+
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
+
+            else:
+                self.logger.info("Something weird happened...")
 
         elif formation == "stacked":
             # Special formation altitude represents the separation on the Z axis between the drones
             special_formation_altitude = 3
 
-            for idx, drone in enumerate(swarm_data.Drones):
-                if self.id == 1:
+            if self.id == 1:
 
-                    # Maneuver to formation altitude
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude)
+                # Maneuver to formation altitude
+                self.vehicle.simple_goto(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude)
 
-                elif self.id == 2:
+            elif self.id == 2:
 
-                    # Maneuver 5 metres below formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude - 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon,
-                                             formationAltitude - special_formation_altitude)
+                # Maneuver 5 metres below formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude - 5
 
-                elif self.id == 3:
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude - special_formation_altitude)
 
-                    # Maneuver 5 metres above formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude + 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon,
-                                             formationAltitude + special_formation_altitude)
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
+
+            elif self.id == 3:
+
+                # Maneuver 5 metres above formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude + 5
+
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude + special_formation_altitude)
+
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
 
         elif formation == "xaxis":
-            for idx, drone in enumerate(swarm_data.Drones):
-                if self.id == 1:
+            if self.id == 1:
 
-                    # Maneuver to formation altitude
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude)
+                # Maneuver to formation altitude
+                self.vehicle.simple_goto(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude)
 
-                elif self.id == 2:
+            elif self.id == 2:
 
-                    # Maneuver 5 metres below formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude - 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon,
-                                             safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat - .0000027, head_drone_loc.lon,
-                                             formationAltitude)
+                # Maneuver 5 metres below formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude - 5
 
-                elif self.id == 3:
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon), safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon), formationAltitude)
 
-                    # Maneuver 5 metres above formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude + 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon,
-                                             safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat + .0000027, head_drone_loc.lon,
-                                             formationAltitude)
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
+
+            elif self.id == 3:
+
+                # Maneuver 5 metres above formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude + 5
+
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon), safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon), formationAltitude)
+
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
 
         elif formation == "yaxis":
-            for idx, drone in enumerate(swarm_data.Drones):
-                if self.id == 1:
+            if self.id == 1:
 
-                    # Maneuver to formation altitude
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon, formationAltitude)
+                # Maneuver to formation altitude
+                self.vehicle.simple_goto(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude)
 
-                elif self.id == 2:
+            elif self.id == 2:
 
-                    # Maneuver 5 metres below formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude - 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon - .0000027,
-                                             safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon - .0000027,
-                                             formationAltitude)
+                # Maneuver 5 metres below formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude - 5
 
-                elif self.id == 3:
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) - .0000027, safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) - .0000027, formationAltitude)
 
-                    # Maneuver 5 metres above formation altitude
-                    if bool:
-                        safeAltitude = formationAltitude
-                    elif not bool:
-                        safeAltitude = formationAltitude + 5
-                    self.vehicle.simple_goto(drone.location.global_frame.lat,
-                                             drone.location.global_frame.lon, safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027,
-                                             safeAltitude)
-                    self.vehicle.simple_goto(head_drone_loc.lat, head_drone_loc.lon + .0000027,
-                                             formationAltitude)
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
+
+            elif self.id == 3:
+
+                # Maneuver 5 metres above formation altitude
+                if bool:
+                    safeAltitude = formationAltitude
+                elif not bool:
+                    safeAltitude = formationAltitude + 5
+
+                waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat, self.vehicle.location.global_relative_frame.lon, safeAltitude)
+                waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) + .0000027, safeAltitude)
+                waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) + .0000027, formationAltitude)
+
+                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                    self.vehicle.simple_goto(waypoint1)
+                    # wait 10 seconds to get to safe altitude
+                    time.sleep(10)
+                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                    self.vehicle.simple_goto(waypoint2)
+                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                    self.vehicle.simple_goto(waypoint3)
 
     def wait_for_next_formation(self, seconds):
         for idx in range(0, seconds):
@@ -581,12 +637,12 @@ class Drone:
     def over_fix(self, lat, lon):
         #Negate to make sense in english
         #Should be True,False,False
-        loc = LocationGlobal(lat, lon)
-        if (self.vehicle.location.global_frame.lat - loc.lat) < 0.000005:
-            if (self.vehicle.location.global_frame.lon - loc.lon) < 0.000005:
-                return False
-            return True
-        return True
+        loc = LocationGlobal(float(lat), float(lon))
+        if abs(self.vehicle.location.global_frame.lat - loc.lat) < 0.000005:
+            if abs(self.vehicle.location.global_frame.lon - loc.lon) < 0.000005:
+                return True
+            return False
+        return False
 
 def toJson(value):
     return {value.__name__() + ":" + value}
