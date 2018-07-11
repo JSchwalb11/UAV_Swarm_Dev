@@ -5,10 +5,13 @@ import logging
 from config import Config
 from mission import Mission
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
+from pymavlink import mavutil
 import site
 
 print(site.USER_SITE)
 from dronekit_sitl import SITL
+print(site.USER_SITE)
+
 from droneData2 import assert_true
 
 import requests
@@ -276,9 +279,9 @@ class Drone:
         self.update_self_to_swarm("/swarm")
 
     def shutdown(self):
-        self.vehicle.remove_attribute_listener('location.global_relative_frame', self.location_callback())
-        self.vehicle.remove_attribute_listener('armed', self.armed_callback())
-        self.vehicle.remove_attribute_listener('mode', self.mode_callback())
+        #self.vehicle.remove_attribute_listener('location.global_relative_frame', self.location_callback())
+        #self.vehicle.remove_attribute_listener('armed', self.armed_callback())
+        #self.vehicle.remove_attribute_listener('mode', self.mode_callback())
         self.vehicle.close()
 
     # =================================MISSION FUNCTIONS=====================================================
@@ -368,13 +371,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon) - 0.0000027, safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon) - 0.0000027, formationAltitude)
 
-                while not self.over_fix(waypoint1.lat,waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    #wait 10 seconds to get to safe altitude
-                    #time.sleep(10)
-                while not self.over_fix(waypoint2.lat,waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
             elif self.id == 3:
@@ -389,13 +390,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon) - 0.0000027, safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon) - 0.0000027, formationAltitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
             else:
@@ -422,13 +421,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude - special_formation_altitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
             elif self.id == 3:
@@ -443,13 +440,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon), formationAltitude + special_formation_altitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
         elif formation == "xaxis":
@@ -470,13 +465,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon), safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) - .0000027, float(head_drone_loc.lon), formationAltitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
             elif self.id == 3:
@@ -491,13 +484,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon), safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027, float(head_drone_loc.lon), formationAltitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
         elif formation == "yaxis":
@@ -518,13 +509,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) - .0000027, safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) - .0000027, formationAltitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
             elif self.id == 3:
@@ -539,13 +528,11 @@ class Drone:
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) + .0000027, safeAltitude)
                 waypoint3 = LocationGlobalRelative(float(head_drone_loc.lat), float(head_drone_loc.lon) + .0000027, formationAltitude)
 
-                while not self.over_fix(waypoint1.lat, waypoint1.lon):
+                while not self.over_3D_fix(waypoint1.lat, waypoint1.lon, waypoint1.alt):
                     self.vehicle.simple_goto(waypoint1)
-                    # wait 10 seconds to get to safe altitude
-                    time.sleep(10)
-                while not self.over_fix(waypoint2.lat, waypoint2.lon):
+                while not self.over_3D_fix(waypoint2.lat, waypoint2.lon, waypoint2.alt):
                     self.vehicle.simple_goto(waypoint2)
-                while not self.over_fix(waypoint3.lat, waypoint3.lon):
+                while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
 
     def wait_for_next_formation(self, seconds):
@@ -634,13 +621,16 @@ class Drone:
             time.sleep(1)
         self.logger.info("Landed!")
 
-    def over_fix(self, lat, lon):
+
+    def over_3D_fix(self, lat, lon, alt):
         #Negate to make sense in english
         #Should be True,False,False
-        loc = LocationGlobal(float(lat), float(lon))
-        if abs(self.vehicle.location.global_frame.lat - loc.lat) < 0.000005:
-            if abs(self.vehicle.location.global_frame.lon - loc.lon) < 0.000005:
-                return True
+        loc = LocationGlobalRelative(float(lat), float(lon), float(alt))
+        if abs(self.vehicle.location.global_frame.lat - loc.lat) < 0.000005: #0.000009 ~~ 1 metre
+            if abs(self.vehicle.location.global_frame.lon - loc.lon) < 0.000005: #0.000009 ~~ 1 metre
+                if abs(self.vehicle.location.global_relative_frame.alt - loc.alt) < (loc.alt * 0.05):
+                    return True
+                return False
             return False
         return False
 

@@ -13,34 +13,45 @@
             lat1 = result.Drones[0].latitude
             lon1 = result.Drones[0].longitude
             alt1 = result.Drones[0].altitude
+            mode1 = result.Drones[0].mode
 
             lat2 = result.Drones[1].latitude
             lon2 = result.Drones[1].longitude
             alt2 = result.Drones[1].altitude
+            mode2 = result.Drones[1].mode
 
             lat3 = result.Drones[2].latitude
             lon3 = result.Drones[2].longitude
             alt3 = result.Drones[2].altitude
+            mode3 = result.Drones[2].mode
 
-            lat4 = result.Drones[3].latitude
-            lon4 = result.Drones[3].longitude
-            alt4 = result.Drones[3].altitude
+            //lat4 = result.Drones[3].latitude
+            //lon4 = result.Drones[3].longitude
+            //alt4 = result.Drones[3].altitude
+            //mode4 = result.Drones[3].mode
 
             $("#drone_1_lat").text(''+lat1)
             $("#drone_1_lon").text(''+lon1)
             $("#drone_1_alt").text(''+alt1)
+            $("#drone_1_mode").text(''+mode1)
+
 
             $("#drone_2_lat").text(''+lat2)
             $("#drone_2_lon").text(''+lon2)
             $("#drone_2_alt").text(''+alt2)
+            $("#drone_2_mode").text(''+mode2)
+
 
             $("#drone_3_lat").text(''+lat3)
             $("#drone_3_lon").text(''+lon3)
             $("#drone_3_alt").text(''+alt3)
+            $("#drone_3_mode").text(''+mode3)
 
-            $("#drone_4_lat").text(''+lat4)
-            $("#drone_4_lon").text(''+lon4)
-            $("#drone_4_alt").text(''+alt4)
+
+            //$("#drone_4_lat").text(''+lat4)
+            //$("#drone_4_lon").text(''+lon4)
+            //$("#drone_4_alt").text(''+alt4)
+            //$("#drone_4_mode").text(''+mode4)
 
 
             //alert('test')
@@ -180,10 +191,10 @@ body {
       <h5>Title description, Dec 7, 2017</h5>
       <div class="fakeimg" style="height:200px;">Image</div>
       <p>Some text..</p>
-      <p id="drone_1"><span id="drone_1_lat">Drone1</span> <span id="drone_1_lon">Drone1</span> <span id="drone_1_alt">Drone1</span></p>
-        <p id="drone_2"><span id="drone_2_lat">Drone2</span> <span id="drone_2_lon">Drone2</span> <span id="drone_2_alt">Drone2</span></p>
-        <p id="drone_3"><span id="drone_3_lat">Drone3</span> <span id="drone_3_lon">Drone3</span> <span id="drone_3_alt">Drone3</span></p>
-        <p id="drone_4"><span id="drone_4_lat">Drone4</span> <span id="drone_4_lon">Drone4</span> <span id="drone_4_alt">Drone4</span></p>
+      <p id="drone_1"><span id="drone_1_lat">Drone1</span> <span id="drone_1_lon">Drone1</span> <span id="drone_1_alt">Drone1</span> <span id="drone_1_mode">Drone1</span></p>
+        <p id="drone_2"><span id="drone_2_lat">Drone2</span> <span id="drone_2_lon">Drone2</span> <span id="drone_2_alt">Drone2</span> <span id="drone_2_mode">Drone1</span></p>
+        <p id="drone_3"><span id="drone_3_lat">Drone3</span> <span id="drone_3_lon">Drone3</span> <span id="drone_3_alt">Drone3</span> <span id="drone_3_mode">Drone1</span></p>
+        <!--<p id="drone_4"><span id="drone_4_lat">Drone4</span> <span id="drone_4_lon">Drone4</span> <span id="drone_4_alt">Drone4</span> <span id="drone_4_mode">Drone1</span></p> -->
       <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
     </div>
     <div class="card">
