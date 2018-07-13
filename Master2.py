@@ -1,8 +1,11 @@
 import site
+
+from pymavlink import mavutil
+
 p = site.USER_SITE
 from droneBrain2 import Drone
-from config import load_json_config, Config
-import time
+from dronekit import Command, LocationGlobalRelative
+from config import load_json_config
 
 import argparse
 
@@ -115,9 +118,25 @@ for idx, drone_cfg in enumerate(swarm_config.Drones):
     drone = Drone(drone_cfg)
     drone.update_self_to_swarm('/Swarm')
     swarm.add_drone(drone)
+"""
+swarm_leader = swarm.swarm[0]
+swarm_leader.commands.clear()
+"""
+waypoint0 = LocationGlobalRelative(waypoints.get("lat1"), waypoints.get("lon1"), formationAlt)
+waypoint1 = LocationGlobalRelative(waypoints.get("lat2"), waypoints.get("lon2"), formationAlt)
+waypoint2 = LocationGlobalRelative(waypoints.get("lat3"), waypoints.get("lon3"), formationAlt)
+waypoint3 = LocationGlobalRelative(waypoints.get("lat4"), waypoints.get("lon4"), formationAlt)
+"""
+for idx in range(1,4):
+    swarm_leader.commands.add(Command(0,0,0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+        0, 0, 0, 0, 0, 0,
+        waypoints.get("lat" + str(idx)), waypoints.get("lon" + str(idx)), formationAlt))
 
+swarm_leader.commands.upload()
+swarm_leader.commands.wait_ready()
+"""
 swarm.list_swarm()
-swarm.wait_for_swarm_ready()
+swarm.wait_for_swarm_ready(3)
 swarm.launch_swarm(15)
 
 # Cycle through formations and waypoints

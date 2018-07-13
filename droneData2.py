@@ -123,26 +123,26 @@ class Swarm:
             print("HTTP " + str(requests.HTTPError))
             return "NO_DATA"
 
-    def wait_for_swarm_ready(self):
+    def wait_for_swarm_ready(self, expected_swarm_size):
         # drone_data.Drones[drone_id][1 (indexing bug)].get("ip")
         swarm_ready_status = []
 
         while not assert_true(swarm_ready_status):
             swarm_params = self.get_swarm_data("/Swarm")
-            swarm_size = swarm_params.Drones.__len__()
-            print("Found " + str(swarm_size) + "Drones in the Swarm.")
-
-            for idx, drone in enumerate(swarm_params.Drones):
-                if not swarm_params:
-                    print("No Drones Found in the Swarm.")
-                else:
-                    if not swarm_params.Drones[idx]:
+            actual_swarm_size = swarm_params.Drones.__len__()
+            print("Found " + str(actual_swarm_size) + "Drones in the Swarm.")
+            if expected_swarm_size == actual_swarm_size:
+                for idx, drone in enumerate(swarm_params.Drones):
+                    if not swarm_params:
                         print("No Drones Found in the Swarm.")
                     else:
-                        print("Drone: " + str(swarm_params.Drones[idx].id + " found in swarm"))
-                        swarm_ready_status.append(1)
-                        time.sleep(1)
-            assert_true(swarm_ready_status)
+                        if not swarm_params.Drones[idx]:
+                            print("No Drones Found in the Swarm.")
+                        else:
+                            print("Drone: " + str(swarm_params.Drones[idx].id + " found in swarm"))
+                            swarm_ready_status.append(1)
+                            time.sleep(1)
+                assert_true(swarm_ready_status)
             # if swarm_is_not_ready and all drones have been checked, do loop again
         print("Swarm is ready!")
 
