@@ -1,0 +1,4 @@
+dronekit-sitl copter -I0 --home=47.919158,-97.064660,845,360
+dronekit-sitl copter -I1 --home=47.919149,-97.064660,845,360
+dronekit-sitl copter -I2 --home=47.919167,-97.064660,845,360
+dronekit-sitl copter -I3 --home=47.919158,-97.064651,845,360
