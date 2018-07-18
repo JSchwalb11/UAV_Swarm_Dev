@@ -65,9 +65,17 @@ class FirstSetOfTests(DroneUnitTest):
     def test_add_to_swarm(self):
         swarm_config = load_json_config("swarm_config")
         self.swarm = Swarm(swarm_config.Swarm)
-        for idx, drone in enumerate(self.swarm_data_structure.get("Drones")):
-            self.swarm.add_drone(self.drones[idx])
-            self.assertTrue(self.swarm.swarmSize(), idx + 1)
+        
+        expectedDroneCount = 0
+        for idx, drone in enumerate(swarm_config.Drones):
+            drone = Drone(swarm_config.Drones[idx])
+            drone.update_self_to_swarm('/Swarm')
+            expectedDroneCount += 1
+        
+        swarmData = drone.get_data_from_server().Drones.__len__
+        actualLength = swarmData.__len__
+
+        self.assertTrue((expectedLength - actualLength) == 0)
 
     """
     def test_swarm_takeoff_altitude(self):

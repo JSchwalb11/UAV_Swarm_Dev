@@ -301,9 +301,14 @@ class Drone:
         swarm_params = self.get_data_from_server("/Swarm")
 
         for idx, drone in enumerate(swarm_params.Drones):
+
             if swarm_params.Drones[idx].id == droneID:
-                while (swarm_params.Drones[idx].altitude <= altitude * 0.95):
+                currentAltitude = swarm_params.Drones[idx].altitude
+                while (currentAltitude <= altitude * 0.95 or currentAltitude >= altiude * 1.05):
+                    
                     swarm_params = self.get_data_from_server("/Swarm")
+                    currentAltitude = swarm_params.Drones[idx].altitude
+
                     print("Waiting for Drone: " + str(swarm_params.Drones[idx].id) + " to reach " + str(
                         altitude))
                     time.sleep(1)

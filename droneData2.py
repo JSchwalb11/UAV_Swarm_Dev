@@ -14,8 +14,6 @@ import time
 import requests
 from config import Config
 from dronekit import LocationGlobalRelative
-from dashboard import Dashboard
-from Tkinter import tkinter, Tk
 
 Drones = [
     {
