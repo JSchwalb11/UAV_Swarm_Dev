@@ -76,6 +76,9 @@ class Drone:
         self.logger.addHandler(ch)
         self.droneSimDataLog.addHandler(fhSimLog)
 
+    #deconstructor to tell the swarm that the drone is leaving and shut down gracefully
+    #def __del__(self):
+
         # Always add the drone to swarm last.
 
     # =============================ATTRIBUTE LISTENER CALLBACKS==============================================
@@ -177,7 +180,7 @@ class Drone:
 
     def move_to_formation(self, aTargetAltitude):
         drone_params = self.get_drone_data()
-        droneLat = float(drone_params)  # would be better to just get the location object...
+        droneLat = float(drone_params['latitude'])  # would be better to just get the location object...
         droneLon = float(drone_params['longitude'])
         droneAlt = float(drone_params['altitude'])
 

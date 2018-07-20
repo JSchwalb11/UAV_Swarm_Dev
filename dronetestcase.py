@@ -24,11 +24,6 @@ class DroneUnitTest(unittest.TestCase):
             "Drones": []
         }
 
-        for idx, drone_cfg in enumerate(self.swarm_config.Drones):
-            drone = Drone(drone_cfg)
-            self.swarm_data_structure.get("Drones").append(drone)
-            self.swarmSize = idx
-
         #idx is zero based so we make is not
         self.swarmSize += 1
         ######################################
@@ -40,50 +35,38 @@ class FirstSetOfTests(DroneUnitTest):
     def setUpClass(self):
         super(FirstSetOfTests, self).setUpClass()
 
-    def test_swarm_size(self):
+    def test_add_to_swarm(self):
 
-        self.assertEqual(self.swarm_data_structure.get("Drones").__len__(), self.swarmSize)
+        expectedDroneCount = 0
+        for idx, drone in enumerate(self.swarm_config.Drones):
+            drone = Drone(self.swarm_config.Drones[idx])
+            self.swarm_data_structure.get("Drones").append(drone)
+            drone.update_self_to_swarm('/Swarm')
+            expectedDroneCount += 1
 
-    def test_drone_put_request(self):
-        for idx, drone in enumerate(self.swarm_data_structure.get("Drones")):
-            status_code = drone.update_self_to_swarm("/Swarm")
-            self.assertEqual(200, status_code)
+        drone = self.swarm_data_structure.get("Drones")[0]
+        swarmData = drone.get_data_from_server("/Swarm")
+        actualDroneCount = len(swarmData.Drones)
 
-    def test_drone_get(self):
-        for idx, drone in enumerate(self.swarm_data_structure.get("Drones")):
-            data = drone.get_data_from_server("/Swarm")
-        self.assertTrue(data)
+        self.assertEqual(actualDroneCount, expectedDroneCount)
+
 
     def test_wait_for_swarm_ready(self):
-        self.swarm.wait_for_swarm_ready()
+        self.swarm.wait_for_swarm_ready(len(self.swarm_data_structure.get("Drones")))
 
     def test_swarm(self):
         swarm_config = load_json_config("swarm_config")
         self.swarm = Swarm(swarm_config.Swarm)
         self.assertTrue(self.swarm)
 
-    def test_add_to_swarm(self):
-        swarm_config = load_json_config("swarm_config")
-        self.swarm = Swarm(swarm_config.Swarm)
-        
-        expectedDroneCount = 0
-        for idx, drone in enumerate(swarm_config.Drones):
-            drone = Drone(swarm_config.Drones[idx])
-            drone.update_self_to_swarm('/Swarm')
-            expectedDroneCount += 1
-        
-        swarmData = drone.get_data_from_server().Drones.__len__
-        actualLength = swarmData.__len__
 
-        self.assertTrue((expectedLength - actualLength) == 0)
-
-    """
+    #for the swarm movement test cases I will have to spawn a thread for each drone
     def test_swarm_takeoff_altitude(self):
         altitude = 10
         for idx, drone in enumerate(self.swarm_data_structure.get("Drones")):
             drone.arm_and_takeoff(10)
         self.swarm_data_structure.get("Drones")[0].wait_for_swarm_to_match_altitude()
-    """
+
 
     ""
     """def test_sitl_instance(self):

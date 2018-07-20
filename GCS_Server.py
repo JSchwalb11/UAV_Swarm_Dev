@@ -124,6 +124,11 @@ class Drone(Resource):
         #Swarm.get('Drones').append(drone_config)
         return 201
 
+#The command class will be used in the future to handle advanced requests that need more information/routing than a simple get/post/put
+#e.g 'removeSelfFromSwarm', 'getDroneData', various requests from drone to drone
+#class Command(Resource):
+
+
 
 # DroneList
 # shows a list of all Drones, and lets you POST to add new drones
@@ -196,6 +201,7 @@ def test1():
 
 	   
 api.add_resource(DroneList, '/Swarm')
+#api.add_resource(Command, '/Command')
 #api.add_resource(Drone, '/Swarm/<drone_id>')
 
 
