@@ -38,7 +38,7 @@ drone.vehicle.mode.name = 'AUTO'
 drone.wait_for_swarm_ready(3)
 drone.arm_and_takeoff(formationAlt)
 
-print("Set groundspeed to 3m/s.")
+print("Set groundspeed to 5m/s.")
 drone.vehicle.groundspeed = 5
 bool = False
 

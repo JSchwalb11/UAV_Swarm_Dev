@@ -90,7 +90,7 @@ Specifically, it provides:
 """
 
 
-def get_location_metres(original_location, dNorth, dEast):
+def get_location_coord(original_location, dNorth, dEast):
     """
     Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the
     specified `original_location`. The returned LocationGlobal has the same `alt` value
@@ -220,7 +220,7 @@ def goto(drone, target_loc, dNorth, dEast):
     """
 
     currentLocation = drone.vehicle.location.global_relative_frame
-    targetLocation = get_location_metres(target_loc, dNorth, dEast)
+    targetLocation = get_location_coord(target_loc, dNorth, dEast)
     targetDistance = get_distance_metres(currentLocation, targetLocation)
     drone.vehicle.simple_goto(targetLocation)
 
