@@ -1,23 +1,60 @@
 import json
-
 import logging
-
 from config import Config
 from dronekit import connect, VehicleMode, LocationGlobalRelative, Command
 from pymavlink import mavutil
 import GISUtils
-import site
-
-print(site.USER_SITE)
-from dronekit_sitl import SITL
-
-print(site.USER_SITE)
-
 from droneData2 import assert_true
-
 import requests
 import time
 
+class DroneLogger:
+
+        def __init__(self, drone):
+            """
+            Fix so get state takes the state of the drone
+            :param drone:
+            """
+
+            self.dronelog.logger = logging.getLogger()
+            self.csv_log = logging.getLogger()
+
+            fh = logging.FileHandler("Drone" + str(drone.id) + "_log_" + str(time.asctime()))
+            fh.setLevel(logging.INFO)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            fh.setFormatter(formatter)
+            self.dronelog.logger.addHandler(fh)
+            self.dronelog.logger.addHandler(ch)
+
+            csv_fh = logging.FileHandler("Drone" + str(drone.id) + "_log_" + str(time.asctime()) + ".csv")
+            csv_fh.setLevel(logging.DEBUG)
+            csv_formatter = logging.Formatter('%(message)s\n')
+            csv_fh.setFormatter(csv_formatter)
+            self.csv_log.addHandler(fh)
+
+
+            """
+            self.state = 'STABILIZE'
+            self.dronelog.logger = logger
+            self.waypoint = 1
+            """
+
+        def log_state(self):
+            self.csv_log.debug(self.get_state)
+
+        def set_state(self, state):
+            self.state = state
+
+        def get_state(self, drone):
+            return drone.get_state()
+
+        def set_waypoint(self, waypoint):
+            self.waypoint = waypoint
+
+        def debug(self, msg):
+            self.dronelog.logger.debug('State = {:s}, waypoint = {:d} {:s}'.format(self.state, self.waypoint, msg))
 
 class Drone:
 
@@ -29,27 +66,14 @@ class Drone:
         self.ip = config.ip
         self.home_location = LocationGlobalRelative(config.lat, config.lon, config.alt)
         self.sitl = config.sitl
-        # Follow instructions @ https://github.com/abearman/sparrow-dev/wiki/How-to-use-the-DroneKit-SITL-simulator
-        self.instance = self.id - 1
-        self.sitlInstance = SITL(instance=self.instance)
-        self.sitlInstance.download('copter', '3.3', verbose=True)
-        # system (e.g. "copter", "solo"), version (e.g. "3.3"), verbose
+        self.webserver = str(self.ip) + ":" + str(self.default_webserver_port)
+        self.connection_string = '/dev/ttyACM0'
 
         if self.sitl:
-            sitl_args = ['--simin=127.0.0.1:4000', '--simout=127.0.0.1:4001', '--model',
-                         'quad',
-                         '--home=' + str(self.home_location.lat) + "," + str(self.home_location.lon) + "," + str(
-                             self.home_location.alt) + ",360"]
-            print(str(sitl_args))
-            self.sitlInstance.launch(sitl_args, verbose=False, await_ready=False, restart=True)
-            self.connection_string = self.sitlInstance.connection_string()
-        else:
-            self.connection_string = '/dev/tty/ACM0'
+            self.sitl_instance = self.sitl_setup()
+            self.connection_string = self.sitl_instance.connection_string()
 
-        self.formation = None
-        self.webserver = str(self.ip) + ":" + str(self.default_webserver_port)
-        print('\nConnecting to vehicle on: %s\n' % self.connection_string)
-        # print(site.USER_SITE)
+        self.dronelog = DroneLogger(self)
         self.vehicle = connect(self.connection_string)
         print("Drone: " + str(self.id) + " connected!")
         self.drone_data = self.get_drone_data()
@@ -59,51 +83,124 @@ class Drone:
         self.vehicle.commands.wait_ready()
         print("Done clearing commands!")
 
-        self.logger = logging.getLogger("drone" + str(self.id) + "_log")
-        self.droneSimDataLog = logging.getLogger("dronesimdata_log")
-        self.logger.setLevel(logging.INFO)
-        fh = logging.FileHandler("drone" + str(self.id) + "_log")
-        fhSimLog = logging.FileHandler("dronesimdata" + str(self.id) + "_log")
-        fh.setLevel(logging.DEBUG)
-        fhSimLog.setLevel(logging.INFO)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        formatterSimLog = logging.Formatter('%(message)s')
-        fh.setFormatter(formatter)
-        fhSimLog.setFormatter(formatterSimLog)
-        self.logger.addHandler(fh)
-        self.logger.addHandler(ch)
-        self.droneSimDataLog.addHandler(fhSimLog)
 
+        print('\nConnecting to vehicle on: %s\n' % self.connection_string)
         # Always add the drone to swarm last.
 
-    # =============================ATTRIBUTE LISTENER CALLBACKS==============================================
-    # =======================================================================================================
-    # def location_callback(self, attr_name, value):
-    #   print("Location (Relative): ", value)
-    # Add a callback `location_callback` for the `global_frame` attribute.
-    # self.update_self_to_swarm("/Swarm")
-    # self.logger.info("Drone Location Changed: " + str(self.vehicle.location.global_relative_frame))
-    # self.droneSimDataLog.info("test1")
-    # if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
-    #    self.vehicle.airspeed = .2
-    # self.logger.info("Location (Global) " + msg)
+    def sitl_setup(self):
+        from dronekit_sitl import SITL
+        instance = self.id - 1
+        sitl_instance = SITL(instance=instance)
+        sitl_instance.download('copter', '3.3', verbose=True)
+        # system (e.g. "copter", "solo"), version (e.g. "3.3"), verbose
+
+        sitl_args = ['--model', 'quad', '--home=' + str(self.home_location.lat) + "," +
+                                                    str(self.home_location.lon) + "," +
+                                                    str(self.home_location.alt) + ",360"]
+
+        sitl_instance.launch(sitl_args, verbose=False, await_ready=True, restart=True)
+
+        return sitl_instance
+
+    def get_state(self):
+        """
+        This function returns the state of the vehicle (or autopilot capabilities [vehicle_state.py]) as a string in CSV format.
+
+        The returning CSV string is formatted as below:
+            Types are included in this description for debugging purposes, but not included as part of the return statement.
+
+            Ex. output:
+                value0, value1, [...], value33 + '\n'
+
+            ASCTime ASCTime of log
+            Boolean Supports MISSION_FLOAT
+            Boolean Supports PARAM_FLOAT
+            Boolean Supports MISSION_INT
+            Boolean Supports COMMAND_INT
+            Boolean Supports PARAM_UNION
+            Boolean Supports ftp for file transfers
+            Boolean Supports commanding attitude offboard
+            Boolean Supports commanding position and velocity targets in local NED frame
+            Boolean Supports set position + velocity targets in global scaled integers
+            Boolean Supports terrain protocol / data handling
+            Boolean Supports direct actuator control
+            Boolean Supports the flight termination command
+            Boolean Supports onboard compass calibration
+            LocationGlobal Global Location
+            LocationGlobalRelative Global Location (relative altitude)
+            LocationLocal Local Location
+            Attitude Attitude
+            List[x,y,z] Velocity
+            GPSInfo GPS
+            Gimbal Gimbal status
+            Battery Battery
+            Boolean EKF OK?
+            Float Last Heartbeat
+            Rangefinder Rangefinder
+            Rangefinder Rangefinder distance
+            Rangefinder Rangefinder voltage
+            Int Heading
+            Boolean Is Armable?
+            SystemStatus System status
+            Double Groundspeed
+            Double Airspeed
+            String Mode
+            Boolean Armed
+
+        :return:
+        """
+        return ('%s\n,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',
+                  time.asctime(),
+                  self.vehicle.capabilities.mission_float,
+                  self.vehicle.capabilities.param_float,
+                  self.vehicle.capabilities.mission_int,
+                  self.vehicle.capabilities.command_int,
+                  self.vehicle.capabilities.param_union,
+                  self.vehicle.capabilities.ftp,
+                  self.vehicle.capabilities.set_attitude_target,
+                  self.vehicle.capabilities.set_attitude_target_local_ned,
+                  self.vehicle.capabilities.set_altitude_target_global_int,
+                  self.vehicle.capabilities.terrain,
+                  self.vehicle.capabilities.set_actuator_target,
+                  self.vehicle.capabilities.flight_termination,
+                  self.vehicle.capabilities.compass_calibration,
+                  self.vehicle.location.global_frame,
+                  self.vehicle.location.global_relative_frame,
+                  self.vehicle.location.local_frame,
+                  self.vehicle.attitude,
+                  self.vehicle.velocity,
+                  self.vehicle.gps_0,
+                  self.vehicle.gimbal,
+                  self.vehicle.battery,
+                  self.vehicle.ekf_ok,
+                  self.vehicle.last_heartbeat,
+                  self.vehicle.rangefinder,
+                  self.vehicle.rangefinder.distance,
+                  self.vehicle.rangefinder.voltage,
+                  self.vehicle.heading,
+                  self.vehicle.is_armable,
+                  self.vehicle.system_status.state,
+                  self.vehicle.groundspeed,
+                  self.vehicle.airspeed,
+                  self.vehicle.mode.name,
+                  self.vehicle.armed
+                  )
 
     def location_callback(self, vehicle, attr_name, value):
-        self.logger.debug("%s : %s", attr_name, value)
+        self.dronelog.logger.debug("%s : %s", attr_name, value)
         self.droneSimDataLog.info("%s : %s", attr_name, value)
         self.update_self_to_swarm("/Swarm")
         if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
             self.vehicle.airspeed = .2
 
     def armed_callback(self, vehicle, attr_name, value):
-        self.logger.debug("%s : %s", attr_name, value)
+        self.dronelog.logger.debug("%s : %s", attr_name, value)
         self.droneSimDataLog.info("%s : %s", attr_name, value)
         self.update_self_to_swarm("/Swarm")
 
     def mode_callback(self, vehicle, attr_name, value):
-        self.logger.debug("%s : %s", attr_name, value)
+        self.dronelog.logger_state.state =  str(attr_name) + '=' + str(value)
+        self.dronelog.logger.debug("%s : %s", attr_name, value)
         self.droneSimDataLog.info("%s : %s", attr_name, value)
         self.update_self_to_swarm("/Swarm")
 
@@ -116,10 +213,10 @@ class Drone:
         try:
             # r = requests.post(url,data)
             r = requests.put(url, json=data)
-            self.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
+            self.dronelog.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
             return r.status_code
         except requests.HTTPError:
-            self.logger.info(str(requests.HTTPError))
+            self.dronelog.logger.info(str(requests.HTTPError))
             return r.status_code
 
     def get_data_from_server(self, route):
@@ -128,10 +225,10 @@ class Drone:
             r = requests.get(url)
             json_data = json.loads(r.text)
             parsed_data = Config(json_data)
-            #self.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
+            #self.dronelog.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
             return parsed_data
         except requests.HTTPError:
-            self.logger.info("HTTP " + str(requests.HTTPError))
+            self.dronelog.logger.info("HTTP " + str(requests.HTTPError))
 
     # =============================VEHICLE INFORMATION FUNCTIONS=================================================
     # =======================================================================================================
@@ -197,7 +294,7 @@ class Drone:
                     # print("Drone 2 Moving To Position")
                     self.vehicle.simple_goto(droneLat - .0000018, droneLon - .0000018, aTargetAltitude - 3)
                     # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                    self.dronelog.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
                         self.vehicle.location.global_relative_frame.lon) + "," + str(
                         self.vehicle.location.global_relative_frame.alt))
 
@@ -207,15 +304,15 @@ class Drone:
                     self.vehicle.simple_goto(droneLat - .0000018, droneLon + .0000018, aTargetAltitude + 3)
 
                     # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                    self.dronelog.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
                         self.vehicle.location.global_relative_frame.lon) + "," + str(
                         self.vehicle.location.global_relative_frame.alt))
 
                 else:
-                    self.logger.info("Cannot Position This Drone In Formation")
+                    self.dronelog.logger.info("Cannot Position This Drone In Formation")
             # Add more else if for more formation types
             else:
-                self.logger.info("No such formation: " + self.formation)
+                self.dronelog.logger.info("No such formation: " + self.formation)
 
         else:
             print("Invalid formation altitude!")
@@ -227,20 +324,20 @@ class Drone:
     def arm(self):
         self.enable_gps()
 
-        self.logger.info("Basic pre-arm checks")
+        self.dronelog.logger.info("Basic pre-arm checks")
 
         while not self.vehicle.is_armable:
-            self.logger.info(" Waiting for vehicle to initialize...")
+            self.dronelog.logger.info(" Waiting for vehicle to initialize...")
             time.sleep(1)
         self.vehicle.mode = VehicleMode("GUIDED")
 
-        self.logger.info("Arming motors")
+        self.dronelog.logger.info("Arming motors")
         # Copter should arm in GUIDED mode
         self.vehicle.armed = True
 
         # Confirm vehicle armed before attempting to take off
         while not self.vehicle.armed:
-            self.logger.info("Waiting for arming...")
+            self.dronelog.logger.info("Waiting for arming...")
             self.vehicle.armed = True
             time.sleep(1)
 
@@ -248,7 +345,7 @@ class Drone:
         # self.vehicle.add_attribute_listener('armed', self.armed_callback)
         # self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
-        self.logger.info("Vehicle Armed!")
+        self.dronelog.logger.info("Vehicle Armed!")
 
     def disable_gps(self):  # http://ardupilot.org/copter/docs/parameters.html
         if not self.sitl:  # don't try updating params in sitl cuz it doesn't work. problem on their end
@@ -268,11 +365,11 @@ class Drone:
 
     def arm_no_GPS(self):
 
-        self.logger.info("Arming motors NO GPS")
+        self.dronelog.logger.info("Arming motors NO GPS")
         self.vehicle.mode = VehicleMode("SPORT")
 
         while not self.vehicle.armed:
-            self.logger.info(" Waiting for arming...")
+            self.dronelog.logger.info(" Waiting for arming...")
             self.disable_gps()
             time.sleep(3)
             self.vehicle.armed = True
@@ -307,7 +404,7 @@ class Drone:
                     print("Waiting for Drone: " + str(swarm_params.Drones[idx].id) + " to reach " + str(
                         altitude))
                     time.sleep(1)
-                self.logger.info(
+                self.dronelog.logger.info(
                     "Drone: " + swarm_params.Drones[idx].id + " reached " + str(altitude) + "...")
 
     def watch_leader_mode(self, drone_id):
@@ -382,7 +479,7 @@ class Drone:
                 dEast = 5
                 dNorth = -5
 
-                target_loc = GISUtils.get_location_metres(head_drone_loc, dNorth=dNorth, dEast=dEast)
+                target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
@@ -412,7 +509,7 @@ class Drone:
                 dEast = -5 #positive for east, negative for west
                 dNorth = -5 # positive for north, negative for south
 
-                target_loc = GISUtils.get_location_metres(head_drone_loc, dNorth=dNorth, dEast=dEast)
+                target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
@@ -432,7 +529,7 @@ class Drone:
                     self.vehicle.simple_goto(waypoint3)
                 """
             else:
-                self.logger.info("Something weird happened...")
+                self.dronelog.logger.info("Something weird happened...")
 
         elif formation == "stacked":
             """
@@ -462,7 +559,7 @@ class Drone:
 
                 while head_drone_data.mode == 'GUIDED':
                     remainingDist = GISUtils.get_distance_metres(current_loc, target_loc)
-                    self.logger.info("%s metres away from leader (ID: %s)...", remainingDist, head_drone_data.id)
+                    self.dronelog.logger.info("%s metres away from leader (ID: %s)...", remainingDist, head_drone_data.id)
                 
                 waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                    self.vehicle.location.global_relative_frame.lon, safeAltitude)
@@ -517,7 +614,7 @@ class Drone:
                 dEast = 5
                 dNorth = -5
 
-                target_loc = GISUtils.get_location_metres(head_drone_loc, dNorth=dNorth, dEast=dEast)
+                target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
@@ -547,7 +644,7 @@ class Drone:
                 dEast = 5
                 dNorth = -5
 
-                target_loc = GISUtils.get_location_metres(head_drone_loc, dNorth=dNorth, dEast=dEast)
+                target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
@@ -584,7 +681,7 @@ class Drone:
                 dEast = 5
                 dNorth = -5
 
-                target_loc = GISUtils.get_location_metres(head_drone_loc, dNorth=dNorth, dEast=dEast)
+                target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
@@ -613,7 +710,7 @@ class Drone:
                 dEast = 5
                 dNorth = -5
 
-                target_loc = GISUtils.get_location_metres(head_drone_loc, dNorth=dNorth, dEast=dEast)
+                target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
@@ -634,26 +731,26 @@ class Drone:
 
     def wait_for_next_formation(self, seconds):
         for idx in range(0, seconds):
-            self.logger.info(
+            self.dronelog.logger.info(
                 "Waiting " + str(seconds) + " seconds before next flight formation... " + str(idx + 1) + "/" + str(
                     seconds))
             time.sleep(1)
 
     def wait_for_formation(self, seconds):
         for idx in range(0, seconds):
-            self.logger.info("Waiting for drones to form up... " + str(idx + 1) + "/" + str(seconds))
+            self.dronelog.logger.info("Waiting for drones to form up... " + str(idx + 1) + "/" + str(seconds))
             time.sleep(1)
 
     """def arm_and_takeoff(self, aTargetAltitude):
         self.arm()
 
-        self.logger.info("Taking off!")
+        self.dronelog.logger.info("Taking off!")
         self.vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
         while True:
-            self.logger.info("Vehicle Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
+            self.dronelog.logger.info("Vehicle Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
             if self.vehicle.location.global_relative_frame.alt >= aTargetAltitude * .95:
-                self.logger.info("Reached target altitude")
+                self.dronelog.logger.info("Reached target altitude")
                 self.update_self_to_swarm("/Swarm")
                 break
             time.sleep(.75)
@@ -666,11 +763,11 @@ class Drone:
 
     def wait_for_leader_takeoff(self, drone_id):
         while not (self.watch_leader_mode(drone_id=drone_id) == 'GUIDED'):
-            self.logger.info("Waiting for leader to change modes...")
+            self.dronelog.logger.info("Waiting for leader to change modes...")
 
         data = self.get_data_from_server("/Swarm")
         idx = self.find_drone_idx(1)
-        self.logger.info("Flying to: %s, %s, %s", str(data.Drones[idx].latitude), str(data.Drones[idx].longitude),
+        self.dronelog.logger.info("Flying to: %s, %s, %s", str(data.Drones[idx].latitude), str(data.Drones[idx].longitude),
                          str(data.Drones[idx].altitude))
         self.vehicle.commands.add(
             Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
@@ -683,17 +780,17 @@ class Drone:
 
         # Arms vehicle and fly to aTargetAltitude.
 
-        self.logger.info("Basic pre-arm checks")
+        self.dronelog.logger.info("Basic pre-arm checks")
         # Don't try to arm until autopilot is ready
         while not self.vehicle.is_armable:
-            self.logger.info(" Waiting for vehicle to initialize...")
+            self.dronelog.logger.info(" Waiting for vehicle to initialize...")
             # self.vehicle.gps_0.fix_type.__add__(2)
             # self.vehicle.gps_0.__setattr__(self.vehicle.gps_0.fix_type, 3)
-            self.logger.debug("Fix type (1-3): " + str(self.vehicle.gps_0.fix_type))
-            self.logger.debug("Satellites Visible: " + str(self.vehicle.gps_0.satellites_visible))
+            self.dronelog.logger.debug("Fix type (1-3): " + str(self.vehicle.gps_0.fix_type))
+            self.dronelog.logger.debug("Satellites Visible: " + str(self.vehicle.gps_0.satellites_visible))
             time.sleep(2)
 
-            self.logger.info("Arming motors")
+            self.dronelog.logger.info("Arming motors")
 
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
         self.vehicle.add_attribute_listener('armed', self.armed_callback)
@@ -705,21 +802,21 @@ class Drone:
 
         # Confirm vehicle armed before attempting to take off
         while not self.vehicle.armed:
-            self.logger.info(" Waiting for arming...")
+            self.dronelog.logger.info(" Waiting for arming...")
             time.sleep(1)
 
-        self.logger.info("Taking off! " + "(" + str(aTargetAltitude) + ")")
+        self.dronelog.logger.info("Taking off! " + "(" + str(aTargetAltitude) + ")")
         self.vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
         while self.vehicle.location.global_relative_frame.alt < aTargetAltitude * 0.95:
-            self.logger.info(" Currently flying... Alt: " + str(self.vehicle.location.global_relative_frame.alt))
+            self.dronelog.logger.info(" Currently flying... Alt: " + str(self.vehicle.location.global_relative_frame.alt))
             time.sleep(1)
 
         if self.vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
-            self.logger.info("Reached target altitude")
+            self.dronelog.logger.info("Reached target altitude")
 
     def land_vehicle(self):
-        self.logger.info("Returning to Launch!!!")
+        self.dronelog.logger.info("Returning to Launch!!!")
 
         if self.sitl:
             self.vehicle.airspeed = 3
@@ -729,14 +826,14 @@ class Drone:
 
         self.set_mode("RTL")
         while self.vehicle.mode.name != "RTL":
-            self.logger.info("Vehicle Mode Didn't Change")
+            self.dronelog.logger.info("Vehicle Mode Didn't Change")
             self.set_mode("RTL")
             time.sleep(1)
         # http://ardupilot.org/copter/docs/parameters.html#rtl-alt-rtl-altitude
         while self.vehicle.location.global_relative_frame.alt > 0.2:
-            self.logger.info("Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
+            self.dronelog.logger.info("Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
             time.sleep(1)
-        self.logger.info("Landed!")
+        self.dronelog.logger.info("Landed!")
 
     def distance_to_next_waypoint_3d(self):
         x = self.vehicle.location.global_relative_frame.lat - self.vehicle.commands.next

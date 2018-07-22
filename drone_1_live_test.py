@@ -13,7 +13,8 @@ drone.vehicle.commands.clear()
 
 drone.vehicle.commands.add(
     Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, 0, 0, 0, 0, 0, 0, 0, formationAlt))
+            0, 0, 0, 0, p
+            0, 0, 0, 0, formationAlt))
 drone.vehicle.commands.add(
     Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_CONDITION_DISTANCE,
             0, 0, 0, 0, 0, 0, 0, 0, formationAlt))
@@ -35,14 +36,14 @@ drone.wait_for_swarm_ready(3)
 drone.arm_and_takeoff(formationAlt)
 drone.wait_for_swarm_to_match_altitude()
 
-print("Set groundspeed to 3m/s.")
+print("Set groundspeed to 2m/s.")
 drone.vehicle.groundspeed = 2
 
 lapstart = time.time()
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=-15, dEast=0), dNorth=-15, dEast=0)
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=15), dNorth=0, dEast=15)
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=15, dEast=0), dNorth=15, dEast=0)
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=-15), dNorth=0, dEast=-15)
+GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_coord(drone.vehicle.location.global_relative_frame, dNorth=-15, dEast=0), dNorth=-15, dEast=0)
+GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_coord(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=15), dNorth=0, dEast=15)
+GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_coord(drone.vehicle.location.global_relative_frame, dNorth=15, dEast=0), dNorth=15, dEast=0)
+GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_coord(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=-15), dNorth=0, dEast=-15)
 drone.logger.info("Lap %s complete!", 1)
 drone.logger.info("Lap time = %s", (time.time() - lapstart))
 
