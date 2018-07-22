@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
 from config import Config
 
@@ -193,6 +193,14 @@ class DroneList(Resource):
 def test1():
     return render_template('test1.html')
 
+@app.route('/map/')
+def map():
+    #ALLOWED = ['http://localhost:8888']
+    s = render_template('map.html')
+    response = make_response(s)
+    #origin = request.headers['127.0.0.1:5550']
+    response.headers['Access-Control-Allow-Origin'] = '127.0.0.1:5550'
+    return response
 
 	   
 api.add_resource(DroneList, '/Swarm')

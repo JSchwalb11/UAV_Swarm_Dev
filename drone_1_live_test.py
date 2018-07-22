@@ -31,20 +31,21 @@ drone.vehicle.mode.name = 'AUTO'
 """
 start_time = time.time()
 
-drone.wait_for_swarm_ready(3)
+drone.wait_for_swarm_ready(1)
 drone.arm_and_takeoff(formationAlt)
 drone.wait_for_swarm_to_match_altitude()
 
 print("Set groundspeed to 3m/s.")
-drone.vehicle.groundspeed = 2
+drone.vehicle.groundspeed = 10
 
 lapstart = time.time()
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=-15, dEast=0), dNorth=-15, dEast=0)
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=15), dNorth=0, dEast=15)
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=15, dEast=0), dNorth=15, dEast=0)
-GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=-15), dNorth=0, dEast=-15)
-drone.logger.info("Lap %s complete!", 1)
-drone.logger.info("Lap time = %s", (time.time() - lapstart))
+while True:
+    GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=-15, dEast=0), dNorth=-15, dEast=0)
+    GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=15), dNorth=0, dEast=15)
+    GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=15, dEast=0), dNorth=15, dEast=0)
+    GISUtils.goto(drone=drone, target_loc=GISUtils.get_location_metres(drone.vehicle.location.global_relative_frame, dNorth=0, dEast=-15), dNorth=0, dEast=-15)
+    drone.logger.info("Lap %s complete!", 1)
+    drone.logger.info("Lap time = %s", (time.time() - lapstart))
 
 
 drone.land_vehicle()
