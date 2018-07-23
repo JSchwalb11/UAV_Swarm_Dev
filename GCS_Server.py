@@ -195,11 +195,9 @@ def test1():
 
 @app.route('/map/')
 def map():
-    #ALLOWED = ['http://localhost:8888']
     s = render_template('map.html')
     response = make_response(s)
-    #origin = request.headers['127.0.0.1:5550']
-    response.headers['Access-Control-Allow-Origin'] = '127.0.0.1:5550'
+    response.headers['Access-Control-Allow-Origin'] = '127.0.0.1'
     return response
 
 	   

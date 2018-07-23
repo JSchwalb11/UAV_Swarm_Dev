@@ -89,6 +89,33 @@ Specifically, it provides:
 * get_bearing - Get the bearing in degrees to a LocationGlobal
 """
 
+def get_location_metres(original_location, dNorth, dEast):
+    """
+    Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the
+    specified `original_location`. The returned LocationGlobal has the same `alt` value
+    as `original_location`.
+    The function is useful when you want to move the vehicle around specifying locations relative to
+    the current vehicle position.
+    The algorithm is relatively accurate over small distances (10m within 1km) except close to the poles.
+    For more information see:
+    http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
+    """
+    earth_radius = 6378137.0  # Radius of "spherical" earth
+    # Coordinate offsets in radians
+    dLat = dNorth / earth_radius
+    dLon = dEast / (earth_radius * math.cos(math.pi * original_location.lat / 180))
+
+    # New position in decimal degrees
+    newlat = original_location.lat + (dLat * 180 / math.pi)
+    newlon = original_location.lon + (dLon * 180 / math.pi)
+    if type(original_location) is LocationGlobal:
+        targetlocation = LocationGlobal(newlat, newlon, original_location.alt)
+    elif type(original_location) is LocationGlobalRelative:
+        targetlocation = LocationGlobalRelative(newlat, newlon, original_location.alt)
+    else:
+        raise Exception("Invalid Location object passed")
+
+    return targetlocation
 
 def get_location_coord(original_location, dNorth, dEast):
     """
@@ -223,6 +250,7 @@ def goto(drone, target_loc, dNorth, dEast):
     targetLocation = get_location_coord(target_loc, dNorth, dEast)
     targetDistance = get_distance_metres(currentLocation, targetLocation)
     drone.vehicle.simple_goto(targetLocation)
+    start_time = time.time()
 
     # print "DEBUG: targetLocation: %s" % targetLocation
     # print "DEBUG: targetLocation: %s" % targetDistance
@@ -230,15 +258,20 @@ def goto(drone, target_loc, dNorth, dEast):
     while drone.vehicle.mode.name == "GUIDED":  # Stop action if we are no longer in guided mode.
         # print "DEBUG: mode: %s" % vehicle.mode.name
         remainingDistance = get_distance_metres(drone.vehicle.location.global_relative_frame, targetLocation)
-        drone.logger.info("Distance to target: " + str(remainingDistance))
-        drone.logger.info("Bearing to target: " + str(get_bearing(currentLocation, targetLocation)))
+        drone.logger.info(msg=("Distance to target: " + str(remainingDistance)))
+        drone.logger.info(msg=("Bearing to target: " + str(get_bearing(currentLocation, targetLocation))))
+        #deltaT = time.time() - start_time
 
         if remainingDistance <= targetDistance * 0.1:  # Just below target, in case of undershoot.
-            drone.logger.info("Reached target")
+            drone.logger.info(msg=("Reached target"))
             break
-
+        
         time.sleep(0.25)
-
+        """
+        if deltaT >= 1:
+            drone.logger.info("Time limit exceeded for goto: {} seconds traveled".format(deltaT))
+            break
+        """
 
 """
 Functions that move the vehicle by specifying the velocity components in each direction.

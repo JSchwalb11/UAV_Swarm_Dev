@@ -8,54 +8,6 @@ from droneData2 import assert_true
 import requests
 import time
 
-class DroneLogger:
-
-        def __init__(self, drone):
-            """
-            Fix so get state takes the state of the drone
-            :param drone:
-            """
-
-            self.dronelog.logger = logging.getLogger()
-            self.csv_log = logging.getLogger()
-
-            fh = logging.FileHandler("Drone" + str(drone.id) + "_log_" + str(time.asctime()))
-            fh.setLevel(logging.INFO)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh.setFormatter(formatter)
-            self.dronelog.logger.addHandler(fh)
-            self.dronelog.logger.addHandler(ch)
-
-            csv_fh = logging.FileHandler("Drone" + str(drone.id) + "_log_" + str(time.asctime()) + ".csv")
-            csv_fh.setLevel(logging.DEBUG)
-            csv_formatter = logging.Formatter('%(message)s\n')
-            csv_fh.setFormatter(csv_formatter)
-            self.csv_log.addHandler(fh)
-
-
-            """
-            self.state = 'STABILIZE'
-            self.dronelog.logger = logger
-            self.waypoint = 1
-            """
-
-        def log_state(self):
-            self.csv_log.debug(self.get_state)
-
-        def set_state(self, state):
-            self.state = state
-
-        def get_state(self, drone):
-            return drone.get_state()
-
-        def set_waypoint(self, waypoint):
-            self.waypoint = waypoint
-
-        def debug(self, msg):
-            self.dronelog.logger.debug('State = {:s}, waypoint = {:d} {:s}'.format(self.state, self.waypoint, msg))
-
 class Drone:
 
     def __init__(self, config):
@@ -73,12 +25,29 @@ class Drone:
             self.sitl_instance = self.sitl_setup()
             self.connection_string = self.sitl_instance.connection_string()
 
-        self.dronelog = DroneLogger(self)
+        self.logger = logging.getLogger("drone" + str(self.id) + "_log")
+        self.logger.setLevel(logging.INFO)
+        fh = logging.FileHandler("drone" + str(self.id) + "_log")
+        fh.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+        self.logger.addHandler(ch)
+
+        self.csv_logger = logging.getLogger("drone" + str(self.id) + "_csv")
+        self.csv_logger.setLevel(logging.INFO)
+        fh = logging.FileHandler("drone" + str(self.id) + "_csv")
+        fh.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(message)s')
+        fh.setFormatter(formatter)
+        self.csv_logger.addHandler(fh)
+
         self.vehicle = connect(self.connection_string)
         print("Drone: " + str(self.id) + " connected!")
         self.drone_data = self.get_drone_data()
         self.vehicle.commands.clear()
-        self.vehicle.commands.upload()
         print("Waiting for vehicle to clear commands!")
         self.vehicle.commands.wait_ready()
         print("Done clearing commands!")
@@ -149,8 +118,8 @@ class Drone:
 
         :return:
         """
-        return ('%s\n,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n',
-                  time.asctime(),
+        string = "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
+                  time.time(),
                   self.vehicle.capabilities.mission_float,
                   self.vehicle.capabilities.param_float,
                   self.vehicle.capabilities.mission_int,
@@ -164,8 +133,10 @@ class Drone:
                   self.vehicle.capabilities.set_actuator_target,
                   self.vehicle.capabilities.flight_termination,
                   self.vehicle.capabilities.compass_calibration,
-                  self.vehicle.location.global_frame,
-                  self.vehicle.location.global_relative_frame,
+                  self.vehicle.location.global_frame.lat,
+                  self.vehicle.location.global_frame.lon,
+                  self.vehicle.location.global_frame.alt,
+                  self.vehicle.location.global_relative_frame.alt,
                   self.vehicle.location.local_frame,
                   self.vehicle.attitude,
                   self.vehicle.velocity,
@@ -185,38 +156,37 @@ class Drone:
                   self.vehicle.mode.name,
                   self.vehicle.armed
                   )
+        return string
 
     def location_callback(self, vehicle, attr_name, value):
-        self.dronelog.logger.debug("%s : %s", attr_name, value)
-        self.droneSimDataLog.info("%s : %s", attr_name, value)
+        self.logger.debug(value)
+        self.csv_logger.info(self.get_state())
         self.update_self_to_swarm("/Swarm")
         if self.vehicle.location.global_relative_frame.alt < 2 and self.vehicle.mode.name == "GUIDED":  # if the vehicle is in guided mode and alt is less than 2m slow it the f down
             self.vehicle.airspeed = .2
 
     def armed_callback(self, vehicle, attr_name, value):
-        self.dronelog.logger.debug("%s : %s", attr_name, value)
-        self.droneSimDataLog.info("%s : %s", attr_name, value)
+        self.logger.debug(msg=(str(attr_name) + ":" + str(value)))
+        self.csv_logger.info(self.get_state())
         self.update_self_to_swarm("/Swarm")
 
     def mode_callback(self, vehicle, attr_name, value):
-        self.dronelog.logger_state.state =  str(attr_name) + '=' + str(value)
-        self.dronelog.logger.debug("%s : %s", attr_name, value)
-        self.droneSimDataLog.info("%s : %s", attr_name, value)
+        self.logger.debug(msg=(str(attr_name) + ":" + str(value)))
+        self.csv_logger.info(self.get_state())
         self.update_self_to_swarm("/Swarm")
 
     # =============================COMMUNICATION TO SERVER===================================================
     # =======================================================================================================
 
     def update_self_to_swarm(self, route):
-        url = 'http://' + self.webserver + route + "?id=" + str(self.id)  # + "/" + str(self.id) + "?id=" + str(self.id)
+        url = 'http://' + self.webserver + route + "?id=" + str(self.id)
         data = self.get_drone_data().__dict__[(str(self.id))]
         try:
-            # r = requests.post(url,data)
             r = requests.put(url, json=data)
-            self.dronelog.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
+            self.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
             return r.status_code
         except requests.HTTPError:
-            self.dronelog.logger.info(str(requests.HTTPError))
+            self.logger.info(str(requests.HTTPError))
             return r.status_code
 
     def get_data_from_server(self, route):
@@ -225,38 +195,28 @@ class Drone:
             r = requests.get(url)
             json_data = json.loads(r.text)
             parsed_data = Config(json_data)
-            #self.dronelog.logger.debug("\nServer Responded With: " + str(r.status_code) + " " + str(r.text) + "\n")
             return parsed_data
         except requests.HTTPError:
-            self.dronelog.logger.info("HTTP " + str(requests.HTTPError))
+            return r.status_code
 
     # =============================VEHICLE INFORMATION FUNCTIONS=================================================
     # =======================================================================================================
     def get_drone_data(self):
         # creates a dictionary object out of the drone data
         return type('obj', (object,), {
-            str(self.id): {
-                "id": self.id,
-                "ip": self.ip,
-                "airspeed": self.vehicle.airspeed,
-                "latitude": self.vehicle.location.global_frame.lat,
-                "longitude": self.vehicle.location.global_frame.lon,
-                "altitude": self.vehicle.location.global_relative_frame.alt,
-                "armable": self.vehicle.is_armable,
-                "armed": self.vehicle.armed,
-                "mode": self.vehicle.mode.name
-            }
-        }
+                                        str(self.id): {
+                                                        "id": self.id,
+                                                        "ip": self.ip,
+                                                        "airspeed": self.vehicle.airspeed,
+                                                        "latitude": self.vehicle.location.global_frame.lat,
+                                                        "longitude": self.vehicle.location.global_frame.lon,
+                                                        "altitude": self.vehicle.location.global_relative_frame.alt,
+                                                        "armable": self.vehicle.is_armable,
+                                                        "armed": self.vehicle.armed,
+                                                        "mode": self.vehicle.mode.name
+                                                      }
+                                      }
                     )
-
-    def print_drone_data(self):
-        drone_params = self.get_drone_data().__dict__.get(str(self.id))
-        string_to_print = "Drone ID: " + str(drone_params.get("id")) + "\nDrone IP: " + str(
-            drone_params.get("ip")) + "\nDrone A/S: " + str(drone_params.get("airspeed")) + "\nDrone Location: (" + str(
-            drone_params.get("latitude")) + ", " + str(drone_params.get("longitude")) + ", " + str(
-            drone_params.get("altitude")) + ")" + "\nDrone Armed: " + str(
-            drone_params.get("armed")) + "\nDrone Mode: " + drone_params.get("mode")
-        print(string_to_print)
 
     # =============================VEHICLE CONTROL FUNCTIONS=================================================
     # =======================================================================================================
@@ -294,7 +254,7 @@ class Drone:
                     # print("Drone 2 Moving To Position")
                     self.vehicle.simple_goto(droneLat - .0000018, droneLon - .0000018, aTargetAltitude - 3)
                     # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                    self.dronelog.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
                         self.vehicle.location.global_relative_frame.lon) + "," + str(
                         self.vehicle.location.global_relative_frame.alt))
 
@@ -304,15 +264,15 @@ class Drone:
                     self.vehicle.simple_goto(droneLat - .0000018, droneLon + .0000018, aTargetAltitude + 3)
 
                     # print("Master loc:",droneLat,",",droneLon,",",droneAlt)
-                    self.dronelog.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
+                    self.logger.info("My Loc:" + str(self.vehicle.location.global_relative_frame.lat) + "," + str(
                         self.vehicle.location.global_relative_frame.lon) + "," + str(
                         self.vehicle.location.global_relative_frame.alt))
 
                 else:
-                    self.dronelog.logger.info("Cannot Position This Drone In Formation")
+                    self.logger.info("Cannot Position This Drone In Formation")
             # Add more else if for more formation types
             else:
-                self.dronelog.logger.info("No such formation: " + self.formation)
+                self.logger.info("No such formation: " + self.formation)
 
         else:
             print("Invalid formation altitude!")
@@ -324,20 +284,20 @@ class Drone:
     def arm(self):
         self.enable_gps()
 
-        self.dronelog.logger.info("Basic pre-arm checks")
+        self.logger.info("Basic pre-arm checks")
 
         while not self.vehicle.is_armable:
-            self.dronelog.logger.info(" Waiting for vehicle to initialize...")
+            self.logger.info(" Waiting for vehicle to initialize...")
             time.sleep(1)
         self.vehicle.mode = VehicleMode("GUIDED")
 
-        self.dronelog.logger.info("Arming motors")
+        self.logger.info("Arming motors")
         # Copter should arm in GUIDED mode
         self.vehicle.armed = True
 
         # Confirm vehicle armed before attempting to take off
         while not self.vehicle.armed:
-            self.dronelog.logger.info("Waiting for arming...")
+            self.logger.info("Waiting for arming...")
             self.vehicle.armed = True
             time.sleep(1)
 
@@ -345,7 +305,7 @@ class Drone:
         # self.vehicle.add_attribute_listener('armed', self.armed_callback)
         # self.vehicle.add_attribute_listener('mode', self.mode_callback)
 
-        self.dronelog.logger.info("Vehicle Armed!")
+        self.logger.info("Vehicle Armed!")
 
     def disable_gps(self):  # http://ardupilot.org/copter/docs/parameters.html
         if not self.sitl:  # don't try updating params in sitl cuz it doesn't work. problem on their end
@@ -365,11 +325,11 @@ class Drone:
 
     def arm_no_GPS(self):
 
-        self.dronelog.logger.info("Arming motors NO GPS")
+        self.logger.info("Arming motors NO GPS")
         self.vehicle.mode = VehicleMode("SPORT")
 
         while not self.vehicle.armed:
-            self.dronelog.logger.info(" Waiting for arming...")
+            self.logger.info(" Waiting for arming...")
             self.disable_gps()
             time.sleep(3)
             self.vehicle.armed = True
@@ -398,13 +358,13 @@ class Drone:
         swarm_params = self.get_data_from_server("/Swarm")
 
         for idx, drone in enumerate(swarm_params.Drones):
-            if swarm_params.Drones[idx].id == droneID:
+            if int(swarm_params.Drones[idx].id) == droneID:
                 while (swarm_params.Drones[idx].altitude <= altitude * 0.95):
                     swarm_params = self.get_data_from_server("/Swarm")
                     print("Waiting for Drone: " + str(swarm_params.Drones[idx].id) + " to reach " + str(
                         altitude))
                     time.sleep(1)
-                self.dronelog.logger.info(
+                self.logger.info(
                     "Drone: " + swarm_params.Drones[idx].id + " reached " + str(altitude) + "...")
 
     def watch_leader_mode(self, drone_id):
@@ -476,8 +436,8 @@ class Drone:
                 elif not bool:
                     safeAltitude = formationAltitude - 5
 
-                dEast = 5
-                dNorth = -5
+                dEast = 3
+                dNorth = -3
 
                 target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
@@ -498,6 +458,7 @@ class Drone:
                     self.vehicle.simple_goto(waypoint3)
                 """
 
+
             elif self.id == 3:
 
                 # Maneuver 5 metres above formation altitude
@@ -506,14 +467,13 @@ class Drone:
                 elif not bool:
                     safeAltitude = formationAltitude + 5
 
-                dEast = -5 #positive for east, negative for west
-                dNorth = -5 # positive for north, negative for south
+                dEast = -3 #positive for east, negative for west
+                dNorth = -3 # positive for north, negative for south
 
                 target_loc = GISUtils.get_location_coord(head_drone_loc, dNorth=dNorth, dEast=dEast)
                 GISUtils.goto(self, target_loc, dNorth=dNorth, dEast=dEast)
 
                 """
-
                 waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                    self.vehicle.location.global_relative_frame.lon, safeAltitude)
                 waypoint2 = LocationGlobalRelative(float(head_drone_loc.lat) + .0000027,
@@ -528,8 +488,9 @@ class Drone:
                 while not self.over_3D_fix(waypoint3.lat, waypoint3.lon, waypoint3.alt):
                     self.vehicle.simple_goto(waypoint3)
                 """
+
             else:
-                self.dronelog.logger.info("Something weird happened...")
+                self.logger.info("Something weird happened...")
 
         elif formation == "stacked":
             """
@@ -559,7 +520,7 @@ class Drone:
 
                 while head_drone_data.mode == 'GUIDED':
                     remainingDist = GISUtils.get_distance_metres(current_loc, target_loc)
-                    self.dronelog.logger.info("%s metres away from leader (ID: %s)...", remainingDist, head_drone_data.id)
+                    self.logger.info("%s metres away from leader (ID: %s)...", remainingDist, head_drone_data.id)
                 
                 waypoint1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                    self.vehicle.location.global_relative_frame.lon, safeAltitude)
@@ -731,26 +692,26 @@ class Drone:
 
     def wait_for_next_formation(self, seconds):
         for idx in range(0, seconds):
-            self.dronelog.logger.info(
+            self.logger.info(
                 "Waiting " + str(seconds) + " seconds before next flight formation... " + str(idx + 1) + "/" + str(
                     seconds))
             time.sleep(1)
 
     def wait_for_formation(self, seconds):
         for idx in range(0, seconds):
-            self.dronelog.logger.info("Waiting for drones to form up... " + str(idx + 1) + "/" + str(seconds))
+            self.logger.info("Waiting for drones to form up... " + str(idx + 1) + "/" + str(seconds))
             time.sleep(1)
 
     """def arm_and_takeoff(self, aTargetAltitude):
         self.arm()
 
-        self.dronelog.logger.info("Taking off!")
+        self.logger.info("Taking off!")
         self.vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
         while True:
-            self.dronelog.logger.info("Vehicle Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
+            self.logger.info("Vehicle Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
             if self.vehicle.location.global_relative_frame.alt >= aTargetAltitude * .95:
-                self.dronelog.logger.info("Reached target altitude")
+                self.logger.info("Reached target altitude")
                 self.update_self_to_swarm("/Swarm")
                 break
             time.sleep(.75)
@@ -763,11 +724,11 @@ class Drone:
 
     def wait_for_leader_takeoff(self, drone_id):
         while not (self.watch_leader_mode(drone_id=drone_id) == 'GUIDED'):
-            self.dronelog.logger.info("Waiting for leader to change modes...")
+            self.logger.info("Waiting for leader to change modes...")
 
         data = self.get_data_from_server("/Swarm")
         idx = self.find_drone_idx(1)
-        self.dronelog.logger.info("Flying to: %s, %s, %s", str(data.Drones[idx].latitude), str(data.Drones[idx].longitude),
+        self.logger.info("Flying to: %s, %s, %s", str(data.Drones[idx].latitude), str(data.Drones[idx].longitude),
                          str(data.Drones[idx].altitude))
         self.vehicle.commands.add(
             Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
@@ -780,17 +741,17 @@ class Drone:
 
         # Arms vehicle and fly to aTargetAltitude.
 
-        self.dronelog.logger.info("Basic pre-arm checks")
+        self.logger.info("Basic pre-arm checks")
         # Don't try to arm until autopilot is ready
         while not self.vehicle.is_armable:
-            self.dronelog.logger.info(" Waiting for vehicle to initialize...")
+            self.logger.info(" Waiting for vehicle to initialize...")
             # self.vehicle.gps_0.fix_type.__add__(2)
             # self.vehicle.gps_0.__setattr__(self.vehicle.gps_0.fix_type, 3)
-            self.dronelog.logger.debug("Fix type (1-3): " + str(self.vehicle.gps_0.fix_type))
-            self.dronelog.logger.debug("Satellites Visible: " + str(self.vehicle.gps_0.satellites_visible))
+            self.logger.debug("Fix type (1-3): " + str(self.vehicle.gps_0.fix_type))
+            self.logger.debug("Satellites Visible: " + str(self.vehicle.gps_0.satellites_visible))
             time.sleep(2)
 
-            self.dronelog.logger.info("Arming motors")
+            self.logger.info("Arming motors")
 
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.location_callback)
         self.vehicle.add_attribute_listener('armed', self.armed_callback)
@@ -802,21 +763,21 @@ class Drone:
 
         # Confirm vehicle armed before attempting to take off
         while not self.vehicle.armed:
-            self.dronelog.logger.info(" Waiting for arming...")
+            self.logger.info(" Waiting for arming...")
             time.sleep(1)
 
-        self.dronelog.logger.info("Taking off! " + "(" + str(aTargetAltitude) + ")")
+        self.logger.info("Taking off! " + "(" + str(aTargetAltitude) + ")")
         self.vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
         while self.vehicle.location.global_relative_frame.alt < aTargetAltitude * 0.95:
-            self.dronelog.logger.info(" Currently flying... Alt: " + str(self.vehicle.location.global_relative_frame.alt))
+            self.logger.info(" Currently flying... Alt: " + str(self.vehicle.location.global_relative_frame.alt))
             time.sleep(1)
 
         if self.vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
-            self.dronelog.logger.info("Reached target altitude")
+            self.logger.info("Reached target altitude")
 
     def land_vehicle(self):
-        self.dronelog.logger.info("Returning to Launch!!!")
+        self.logger.info("Returning to Launch!!!")
 
         if self.sitl:
             self.vehicle.airspeed = 3
@@ -826,14 +787,14 @@ class Drone:
 
         self.set_mode("RTL")
         while self.vehicle.mode.name != "RTL":
-            self.dronelog.logger.info("Vehicle Mode Didn't Change")
+            self.logger.info("Vehicle Mode Didn't Change")
             self.set_mode("RTL")
             time.sleep(1)
         # http://ardupilot.org/copter/docs/parameters.html#rtl-alt-rtl-altitude
         while self.vehicle.location.global_relative_frame.alt > 0.2:
-            self.dronelog.logger.info("Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
+            self.logger.info("Altitude: " + str(self.vehicle.location.global_relative_frame.alt))
             time.sleep(1)
-        self.dronelog.logger.info("Landed!")
+        self.logger.info("Landed!")
 
     def distance_to_next_waypoint_3d(self):
         x = self.vehicle.location.global_relative_frame.lat - self.vehicle.commands.next

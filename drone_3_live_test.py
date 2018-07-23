@@ -37,9 +37,11 @@ drone.vehicle.mode.name = 'AUTO'
 
 drone.wait_for_swarm_ready(3)
 drone.arm_and_takeoff(formationAlt)
+drone.wait_for_swarm_to_match_altitude()
 
-print("Set groundspeed to 5m/s.")
-drone.vehicle.groundspeed = 5
+groundspeed = 5
+print("Set groundspeed to {}m/s.".format(groundspeed))
+drone.vehicle.groundspeed = groundspeed
 bool = False
 
 while drone.watch_leader_mode(drone_id=1) == 'GUIDED':
