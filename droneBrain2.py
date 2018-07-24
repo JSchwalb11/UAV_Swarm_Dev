@@ -118,8 +118,10 @@ class Drone:
 
         :return:
         """
-        string = "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
+        string = "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
                   time.time(),
+                  self.id,
+                  self.ip,
                   self.vehicle.capabilities.mission_float,
                   self.vehicle.capabilities.param_float,
                   self.vehicle.capabilities.mission_int,

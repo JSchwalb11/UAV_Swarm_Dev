@@ -16,17 +16,17 @@ class LogAnalyzer():
         self.time_start = None
         self.time_total = None
 
-
-
         with open(some_file, 'r') as csv_file:
             reader = csv.reader(csv_file)
             for idx, field in enumerate(reader):
                 if idx == 0:
                     self.time_start = float(field[0])
+                    self.process(field)
                     print('0')
                 else:
                     dt = float(field[0]) - self.time_start
                     self.time_total = dt
+                    self.process(field)
                     print(self.time_total)
 
 
@@ -34,10 +34,40 @@ class LogAnalyzer():
         Begin declaration of the all state variables for later analysis.
         """
 
+    def process(self, csv_string):
+        drone_id = csv_string[1]
+        drone_ip = csv_string[2]
+        drone_airspeed = csv_string[35]
+        drone_lat = csv_string[16]
+        drone_lon = csv_string[17]
+        drone_alt = csv_string[18]
+        drone_is_armable = csv_string[csv_string.__len__()-5]
+        drone_armed = csv_string[csv_string.__len__()-2]
+        drone_mode_name = csv_string[csv_string.__len__()-3]
+
+        drone_data = {
+                                        drone_id: {
+                                                        "id": drone_id,
+                                                        "ip": drone_ip,
+                                                        "airspeed": drone_airspeed,
+                                                        "latitude": drone_lat,
+                                                        "longitude": drone_lon,
+                                                        "altitude": drone_alt,
+                                                        "armable": drone_is_armable,
+                                                        "armed": drone_armed,
+                                                        "mode": drone_mode_name
+                                                      }
+                                      }
+        print(drone_data)
+
+        return drone_data
+
     def replay_log(self):
-        start_time = csv
+        pass
 
     def detect_collision(self):
         pass
+
+
 
 logAnalyzer = LogAnalyzer('drone1_csv')

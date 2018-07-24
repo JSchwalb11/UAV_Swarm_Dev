@@ -1,24 +1,19 @@
 import csv
-
 import gizeh
 import moviepy.editor as mpy
-with open('csvtest', 'w') as csv:
-    for i in range(0, 10):
-        csv.write(str(i) + ',' + str(i * 10) + '\n')
+from PIL import Image, ImageDraw
 
-with open('drone1_log', 'r') as logfile:
+with open('drone1_csv', 'r') as logfile:
     pos = []
     for idx, line in enumerate(logfile):
-        #print(idx)
         data = line.split(',')
-        #pos.append(data.trim)
         print(data)
 
 
 
 W,H = 128,128 # width, height, in pixels
-fps = 15
-duration = 2 # duration of the clip, in seconds
+fps = 60
+duration = 0.5 # duration of the clip, in seconds
 
 def make_frame(t):
     #print(t)
@@ -30,11 +25,7 @@ def make_frame(t):
     return surface.get_npimage()
 
 clip = mpy.VideoClip(make_frame, duration=duration)
-clip.write_gif("circle.gif",fps=fps, opt="OptimizePlus", fuzz=10)
-"""
-import moviepy.editor as mpy
-from PIL import Image, ImageDraw
-
+clip.write_videofile("circle.mp4",fps=fps)
 
 def getFrame(t):
     print(t)
@@ -44,5 +35,3 @@ def getFrame(t):
     return image
 
 clip = mpy.VideoClip(getFrame, duration=2)
-
-"""
