@@ -1,10 +1,10 @@
 from pykml.factory import KML_ElementMaker as KML
 from pykml.factory import GX_ElementMaker as GX
 from lxml import etree
+from decimal import *
 import argparse
 import csv
 import os.path
-
 
 
 
@@ -12,8 +12,8 @@ def Main():
    parser = argparse.ArgumentParser(description='This is a tool for converting DroneBrain CSV dumps to a user friendly KML file.')
    parser.add_argument("input", help="The CSV file you wish to convert", type=str)
    parser.add_argument("output", help="The desired output file location", type=str)
-   parser.add_argument("-q", "--quality", help="An integer to represent the interval between points. eg. If 2 is chosen, every second point will be skipped in the output KML to cut the file size in half. Default: 1", default=1)
-   parser.add_argument("-sa", "--startingAltitude", help="The actual starting altitude of the vehicle. Useful if using in a sitl environment as the value fed in for ground will not be perfect, IN FEET")
+   parser.add_argument("-q", "--quality", help="An integer to represent the interval between points. eg. Imagine it as a divider, if 2 is chosen half the points will be processed. Default: 1", default=1)
+   parser.add_argument("-sa", "--startingAltitude", help="The actual starting altitude of the vehicle. Useful if using in a sitl environment as the value fed in for ground will not be perfectly accurate, Unit: FEET")
 
 
 
@@ -65,7 +65,7 @@ def convertToKML(inFile, outFile, quality, startingAltitude=0, needOffsetAlt=Fal
 
             placemarks.append(
                KML.Placemark(
-                  KML.name(dt),
+                  KML.name(Decimal(dt).quantize(Decimal(10) ** -2)),
                   KML.description(field[0]),
                   KML.Point(
                      KML.altitudeMode("absolute"),
