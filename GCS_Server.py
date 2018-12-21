@@ -200,6 +200,10 @@ def map():
     response.headers['Access-Control-Allow-Origin'] = '127.0.0.1'
     return response
 
+@app.route('/map/drone_icon.jpg')
+def drone_icon():
+    return render_template('drone_icon.html')
+
 	   
 api.add_resource(DroneList, '/Swarm')
 #api.add_resource(Drone, '/Swarm/<drone_id>')

@@ -20,19 +20,43 @@
         zoom: 16
     });
 
-    var elevatedMarker1 = L.marker([47.9228946,-97.0789901], {
-        elevation: 260.0,
-        title: "Drone 1"
-    }).addTo(map);
+    var LeafIcon = L.Icon.extend({
+		options: {
+			iconSize:     [38, 95],
+			iconAnchor:   [22, 94],
+			popupAnchor:  [-3, -76]
+		}
+	});
 
-    var elevatedMarker2 = L.marker([47.9228946,-97.0789901], {
+    var greenIcon = new LeafIcon({iconUrl: L.Icon.Default.imagePath + 'drone_icon.jpg'})
+
+    elevatedMarker1 = L.marker([47.9228946,-97.0789901], {
         elevation: 260.0,
-        title: "Drone 2"
-    }).addTo(map);
-    var elevatedMarker3 = L.marker([47.9228946,-97.0789901], {
+        title: "Drone 1",
+        //icon: greenIcon
+    }).bindPopup("Drone #1").addTo(map);
+
+    elevatedMarker2 = L.marker([47.9228946,-97.0789901], {
         elevation: 260.0,
-        title: "Drone 3"
-    }).addTo(map);
+        title: "Drone 2",
+        //icon: greenIcon
+    }).bindPopup("Drone #2").addTo(map);
+    elevatedMarker3 = L.marker([47.9228946,-97.0789901], {
+        elevation: 260.0,
+        title: "Drone 3",
+        //icon: greenIcon
+    }).bindPopup("Drone #3").addTo(map);
+
+
+    /*
+		redIcon = new LeafIcon({iconUrl: 'leaf-red.png'}),
+		orangeIcon = new LeafIcon({iconUrl: 'leaf-orange.png'});
+
+	L.marker([51.5, -0.09], {icon: greenIcon}).bindPopup("I am a green leaf.").addTo(map);
+	L.marker([51.495, -0.083], {icon: redIcon}).bindPopup("I am a red leaf.").addTo(map);
+	L.marker([51.49, -0.1], {icon: orangeIcon}).bindPopup("I am an orange leaf.").addTo(map)
+	*/
+
 
     function select_drone(){
         $.ajax({
@@ -41,47 +65,42 @@
         .fail(function() {
             alert( "error" );
         }).done(function(result) {
-            lat1 = result.Drones[0].latitude
-            lon1 = result.Drones[0].longitude
-            alt1 = result.Drones[0].altitude
-            mode1 = result.Drones[0].mode
-            var newLatLng1 = new L.LatLng(lat1, lon1);
-            elevatedMarker1.setLatLng(newLatLng1)
-            elevatedMarker1.elevation = alt1
 
-            lat2 = result.Drones[1].latitude
-            lon2 = result.Drones[1].longitude
-            alt2 = result.Drones[1].altitude
-            mode2 = result.Drones[1].mode
-            var newLatLng2 = new L.LatLng(lat2, lon2);
-            elevatedMarker2.setLatLng(newLatLng2)
-            elevatedMarker2.elevation = alt2
+            var Drones = new Array()
+            for (i=0; i<result.Drones.length; i++){
+               drone = {
+               id:result.Drones[i].id,
+               lat:result.Drones[i].latitude,
+               lon:result.Drones[i].longitude,
+               alt:result.Drones[i].altitude,
+               mode:result.Drones[i].mode
+               }
+               Drones.push(drone)
+            }
 
+            var updatedMarkerPos = new L.LatLng(Drones[0].lat, Drones[0].lon, Drones[0].alt)
+            elevatedMarker1.setLatLng(updatedMarkerPos)
 
-            lat3 = result.Drones[2].latitude
-            lon3 = result.Drones[2].longitude
-            alt3 = result.Drones[2].altitude
-            mode3 = result.Drones[2].mode
-            var newLatLng3 = new L.LatLng(lat3, lon3);
-            elevatedMarker3.setLatLng(newLatLng3)
-            elevatedMarker3.elevation = alt3
+            var updatedMarkerPos = new L.LatLng(Drones[1].lat, Drones[1].lon, Drones[1].alt)
+            elevatedMarker2.setLatLng(updatedMarkerPos)
 
-            $("#drone_1_lat").text(''+lat1)
-            $("#drone_1_lon").text(''+lon1)
-            $("#drone_1_alt").text(''+alt1)
-            $("#drone_1_mode").text(''+mode1)
+            var updatedMarkerPos = new L.LatLng(Drones[2].lat, Drones[2].lon, Drones[2].alt)
+            elevatedMarker3.setLatLng(updatedMarkerPos)
 
+            $("#drone_1_lat").text(''+Drones[0].lat)
+            $("#drone_1_lon").text(''+Drones[0].lon)
+            $("#drone_1_alt").text(''+Drones[0].alt)
+            $("#drone_1_mode").text(''+Drones[0].mode)
 
-            $("#drone_2_lat").text(''+lat2)
-            $("#drone_2_lon").text(''+lon2)
-            $("#drone_2_alt").text(''+alt2)
-            $("#drone_2_mode").text(''+mode2)
+            $("#drone_2_lat").text(''+Drones[1].lat)
+            $("#drone_2_lon").text(''+Drones[1].lon)
+            $("#drone_2_alt").text(''+Drones[1].alt)
+            $("#drone_2_mode").text(''+Drones[1].mode)
 
-
-            $("#drone_3_lat").text(''+lat3)
-            $("#drone_3_lon").text(''+lon3)
-            $("#drone_3_alt").text(''+alt3)
-            $("#drone_3_mode").text(''+mode3)
+            $("#drone_3_lat").text(''+Drones[2].lat)
+            $("#drone_3_lon").text(''+Drones[2].lon)
+            $("#drone_3_alt").text(''+Drones[2].alt)
+            $("#drone_3_mode").text(''+Drones[2].mode)
 
         });
 
